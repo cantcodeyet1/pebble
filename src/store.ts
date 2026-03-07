@@ -64,6 +64,7 @@ interface PebbleStore {
   recordActivity: () => void;
   addLogos: (logos: Omit<Logos, 'id' | 'dateAdded' | 'nextReviewDate' | 'masteryLevel'>) => void;
   appendLogos: (logos: Logos) => void;
+  removeLogos: (id: string) => void;
   updateMastery: (id: string, success: boolean) => void;
 }
 
@@ -90,6 +91,7 @@ export const usePebbleStore = create<PebbleStore>((set) => ({
       : [...state.activityDates, today];
     return { logoi: [logos, ...state.logoi], activityDates: newDates, streak: computeStreak(newDates) };
   }),
+  removeLogos: (id) => set((state) => ({ logoi: state.logoi.filter(l => l.id !== id) })),
   addLogos: (newLogos) => set((state) => ({
     logoi: [
       ...state.logoi,

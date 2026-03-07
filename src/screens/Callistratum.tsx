@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePebbleStore, Logos, Tier } from '../store';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { updateLogos } from '../db/logoi';
+import { updateLogos, deleteLogos } from '../db/logoi';
 
 function masteryClass(level: number): string {
   if (level === 0) return '';
@@ -24,14 +24,42 @@ const CheckIcon = () => (
 );
 
 export const Callistratum = () => {
-  const { logoi } = usePebbleStore();
+  const { logoi, removeLogos } = usePebbleStore();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [selectedTier, setSelectedTier] = useState<Tier | 'All'>('All');
   const [selectedLogos, setSelectedLogos] = useState<Logos | null>(null);
 
-  const [starred, setStarred] = useState<Set<string>>(new Set());
+  const [starred, setStarred]           = useState<Set<string>>(new Set());
+  const [confirmLogos, setConfirmLogos] = useState<Logos | null>(null);
+  const [swipingId, setSwipingId]       = useState<string | null>(null);
+  const [swipeX, setSwipeX]             = useState(0);
+  const swipeStartX  = useRef(0);
+  const swipeMoved   = useRef(false);
+  const THRESHOLD    = 80;
   const starredInitialized = useRef(false);
+
+  const startSwipe = useCallback((id: string, x: number) => {
+    setSwipingId(id);
+    swipeStartX.current = x;
+    swipeMoved.current = false;
+  }, []);
+
+  const moveSwipe = useCallback((x: number) => {
+    setSwipeX(prev => {
+      const delta = x - swipeStartX.current;
+      if (delta > 5) swipeMoved.current = true;
+      return Math.max(0, Math.min(delta, 130));
+    });
+  }, []);
+
+  const endSwipe = useCallback((logos: Logos) => {
+    setSwipingId(null);
+    setSwipeX(curr => {
+      if (curr >= THRESHOLD) setConfirmLogos(logos);
+      return 0;
+    });
+  }, [THRESHOLD]);
 
   // Sync starred from store once logoi is first populated (handles async DB load on startup)
   useEffect(() => {
@@ -124,36 +152,105 @@ export const Callistratum = () => {
             </div>
           </div>
         )}
-        {filteredLogoi.map(logos => (
-          <div
-            key={logos.id}
-            className={`logos-item ${masteryClass(logos.masteryLevel)}`}
-            onClick={() => setSelectedLogos(logos)}
-          >
-            <div style={{ flex: 1 }}>
-              <div className="li-name">
-                {logos.text}
-                <span className={`tier-badge ${tierClass(logos.tier)}`} style={{ fontSize: 8 }}>{logos.tier}</span>
+        {filteredLogoi.map(logos => {
+          const isSwiping = swipingId === logos.id;
+          const dx = isSwiping ? swipeX : 0;
+          const revealOpacity = Math.min(dx / THRESHOLD, 1);
+          return (
+            <div key={logos.id} style={{ position: 'relative', borderRadius: 14, overflow: 'hidden' }}>
+              {/* Delete reveal panel */}
+              <div style={{
+                position: 'absolute', inset: 0, borderRadius: 14,
+                background: `rgba(239,68,68,${0.08 + revealOpacity * 0.1})`,
+                border: `1px solid rgba(239,68,68,${revealOpacity * 0.3})`,
+                display: 'flex', alignItems: 'center', paddingLeft: 18, gap: 8,
+                opacity: revealOpacity,
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+                </svg>
+                <span style={{ color: '#f87171', fontSize: 13, fontWeight: 500 }}>Delete</span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="reg-lbl">{logos.register}</span>
-                <div className="mdots">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className={`mdot${i < logos.masteryLevel ? ' f' : ''}`} />
-                  ))}
+
+              {/* Logos item */}
+              <div
+                className={`logos-item ${masteryClass(logos.masteryLevel)}`}
+                style={{
+                  transform: `translateX(${dx}px)`,
+                  transition: isSwiping ? 'none' : 'transform 0.25s ease',
+                  touchAction: 'pan-y',
+                }}
+                onClick={() => { if (!swipeMoved.current) setSelectedLogos(logos); }}
+                onTouchStart={e => startSwipe(logos.id, e.touches[0].clientX)}
+                onTouchMove={e => moveSwipe(e.touches[0].clientX)}
+                onTouchEnd={() => endSwipe(logos)}
+                onMouseDown={e => startSwipe(logos.id, e.clientX)}
+                onMouseMove={e => { if (isSwiping) moveSwipe(e.clientX); }}
+                onMouseUp={() => endSwipe(logos)}
+                onMouseLeave={() => { if (isSwiping) { setSwipingId(null); setSwipeX(0); } }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div className="li-name">
+                    {logos.text}
+                    <span className={`tier-badge ${tierClass(logos.tier)}`} style={{ fontSize: 8 }}>{logos.tier}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="reg-lbl">{logos.register}</span>
+                    <div className="mdots">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className={`mdot${i < logos.masteryLevel ? ' f' : ''}`} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
+                <button
+                  className={`star-btn${starred.has(logos.id) ? ' starred' : ''}`}
+                  onClick={e => toggleStar(e, logos.id)}
+                >★</button>
+                <div className="chevron">›</div>
               </div>
             </div>
-            <button
-              className={`star-btn${starred.has(logos.id) ? ' starred' : ''}`}
-              onClick={e => toggleStar(e, logos.id)}
-            >★</button>
-            <div className="chevron">›</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Detail Modal */}
+      {/* Delete confirm */}
+      {confirmLogos && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, padding: '0 24px' }}
+          onClick={() => setConfirmLogos(null)}
+        >
+          <div
+            style={{ background: 'var(--glass)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid var(--glass-border)', borderRadius: 20, padding: '28px 24px', width: '100%', maxWidth: 340 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 600, fontStyle: 'italic', color: 'var(--text)', marginBottom: 4 }}>
+              {confirmLogos.text}
+            </div>
+            <div style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--gold-dim)', marginBottom: 16 }}>
+              Remove from library
+            </div>
+            <div style={{ width: '100%', height: 1, background: 'var(--glass-border)', marginBottom: 16 }} />
+            <div style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.7, marginBottom: 24 }}>
+              This logos and all its training progress will be permanently deleted.
+            </div>
+            <button
+              onClick={() => { deleteLogos(confirmLogos.id).catch(() => {}); removeLogos(confirmLogos.id); setConfirmLogos(null); }}
+              style={{ width: '100%', background: 'rgba(248,113,113,.1)', border: '1px solid rgba(248,113,113,.2)', borderRadius: 12, padding: '13px', fontSize: 14, fontWeight: 600, color: '#f87171', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", marginBottom: 8 }}
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => setConfirmLogos(null)}
+              style={{ width: '100%', background: 'rgba(255,255,255,.04)', border: '1px solid var(--glass-border)', borderRadius: 12, padding: '13px', fontSize: 14, color: 'var(--text-mid)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {selectedLogos && (
         <div className="det-ov" onClick={e => { if (e.target === e.currentTarget) setSelectedLogos(null); }}>
           <div className="det-card">
