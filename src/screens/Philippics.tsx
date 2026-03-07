@@ -35,7 +35,6 @@ export const Philippics = () => {
   const mastered = logoi.filter(l => l.masteryLevel === 5).length;
   const words = logoi.filter(l => l.tier === 'Word');
   const phrases = logoi.filter(l => l.tier === 'Phrase');
-  const collocs = logoi.filter(l => l.tier === 'Collocation');
 
   return (
     <>
@@ -90,11 +89,6 @@ export const Philippics = () => {
           <div className="tbr-bg"><div className="tbr-f" style={{ width: '40%' }}/></div>
           <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4 }}>5 of 14 mastered</div>
         </div>
-        <div className="tbr">
-          <div className="tbr-h"><span className="tbr-n">COLLOCATIONS</span><span className="tbr-p">33%</span></div>
-          <div className="tbr-bg"><div className="tbr-f" style={{ width: '33%' }}/></div>
-          <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 4 }}>3 of 13 mastered</div>
-        </div>
       </div>
 
       {/* Campaign Record */}
@@ -127,11 +121,9 @@ export const Philippics = () => {
           <div className="cc-num">12</div>
           <div className="cc-label">Mastered Total</div>
           <div className="cc-sub" style={{ marginTop: 5 }}>
-            <span style={{ color: 'var(--gold)', fontSize: 10 }}>4W</span>
+            <span style={{ color: '#60a5fa', fontSize: 10 }}>4W</span>
             <span style={{ color: 'var(--text-dim)', fontSize: 10 }}> · </span>
-            <span style={{ color: '#5ec4c4', fontSize: 10 }}>5P</span>
-            <span style={{ color: 'var(--text-dim)', fontSize: 10 }}> · </span>
-            <span style={{ color: '#c4a5e8', fontSize: 10 }}>3C</span>
+            <span style={{ color: '#c4a5e8', fontSize: 10 }}>5P</span>
           </div>
         </div>
         <div className="camp-card">
@@ -143,11 +135,9 @@ export const Philippics = () => {
           <div className="cc-num" style={{ color: 'var(--gold-bright)' }}>+9</div>
           <div className="cc-label">New This Week</div>
           <div className="cc-sub" style={{ marginTop: 5 }}>
-            <span style={{ color: 'var(--gold)', fontSize: 10 }}>3W</span>
+            <span style={{ color: '#60a5fa', fontSize: 10 }}>3W</span>
             <span style={{ color: 'var(--text-dim)', fontSize: 10 }}> · </span>
-            <span style={{ color: '#5ec4c4', fontSize: 10 }}>4P</span>
-            <span style={{ color: 'var(--text-dim)', fontSize: 10 }}> · </span>
-            <span style={{ color: '#c4a5e8', fontSize: 10 }}>2C</span>
+            <span style={{ color: '#c4a5e8', fontSize: 10 }}>4P</span>
           </div>
         </div>
         <div className="camp-card">
@@ -162,11 +152,9 @@ export const Philippics = () => {
           <div className="cc-num" style={{ color: '#f87171' }}>3</div>
           <div className="cc-label">Forgotten</div>
           <div className="cc-sub" style={{ marginTop: 5 }}>
-            <span style={{ color: 'var(--gold)', fontSize: 10 }}>1W</span>
+            <span style={{ color: '#60a5fa', fontSize: 10 }}>1W</span>
             <span style={{ color: 'var(--text-dim)', fontSize: 10 }}> · </span>
-            <span style={{ color: '#5ec4c4', fontSize: 10 }}>1P</span>
-            <span style={{ color: 'var(--text-dim)', fontSize: 10 }}> · </span>
-            <span style={{ color: '#c4a5e8', fontSize: 10 }}>1C</span>
+            <span style={{ color: '#c4a5e8', fontSize: 10 }}>1P</span>
           </div>
         </div>
       </div>

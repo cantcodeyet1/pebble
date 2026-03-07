@@ -25,16 +25,6 @@ const slides = [
     syns: ['Endure', 'Soldier on', 'Grin and bear it'],
     btnLabel: 'Train this phrase →',
   },
-  {
-    tier: 'Collocation' as const,
-    tc: 'tb-colloc',
-    word: 'Deeply flawed',
-    pos: 'Adverb + Adjective',
-    def: '"Having serious or fundamental imperfections."',
-    ex: '"The reasoning was deeply flawed, yet nobody dared challenge it."',
-    syns: ['Profoundly wrong', 'Fundamentally broken'],
-    btnLabel: 'Train this collocation →',
-  },
 ];
 
 const weekDays = [
@@ -56,7 +46,7 @@ export const Ecclesia = () => {
 
   const dueCount = logoi.filter(l => l.nextReviewDate <= new Date()).length;
 
-  const goSlide = (i: number) => setSlide(Math.max(0, Math.min(2, i)));
+  const goSlide = (i: number) => setSlide(Math.max(0, Math.min(1, i)));
 
   const onDragStart = (clientX: number) => {
     dragStartRef.current = clientX;
@@ -120,7 +110,7 @@ export const Ecclesia = () => {
           </div>
         </div>
         <div className="carousel-dots">
-          {[0, 1, 2].map(i => (
+          {[0, 1].map(i => (
             <div key={i} className={`cdot${slide === i ? ' active' : ''}`} onClick={() => goSlide(i)} />
           ))}
         </div>

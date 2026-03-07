@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { addDays } from 'date-fns';
 
-export type Tier = 'Word' | 'Phrase' | 'Collocation';
+export type Tier = 'Word' | 'Phrase';
 export type Register = 'Formal' | 'Informal' | 'Literary' | 'Academic' | 'Idiomatic';
 
 export interface Logos {
@@ -12,6 +12,9 @@ export interface Logos {
   exampleSentence: string;
   sourceSentence?: string;
   register: Register;
+  phonetic?: string;
+  pos?: string;
+  synonyms?: string[];
   masteryLevel: number; // 0 to 5
   nextReviewDate: Date;
   dateAdded: Date;

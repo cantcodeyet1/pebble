@@ -24,10 +24,6 @@ const ScreenWrapper = ({ children }: { children: React.ReactNode }) => (
 const AnimatedRoutes = () => {
   const location = useLocation();
 
-React.useEffect(() => {
-  classify('ephemeral').then(console.log).catch(console.error)
-}, [])
-
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>

@@ -14,8 +14,7 @@ function masteryClass(level: number): string {
 
 function tierClass(tier: Tier): string {
   if (tier === 'Word') return 'tb-word';
-  if (tier === 'Phrase') return 'tb-phrase';
-  return 'tb-colloc';
+  return 'tb-phrase';
 }
 
 const CheckIcon = () => (
@@ -59,7 +58,7 @@ export const Callistratum = () => {
     });
   };
 
-  const chips: (Tier | 'All')[] = ['All', 'Word', 'Phrase', 'Collocation'];
+  const chips: (Tier | 'All')[] = ['All', 'Word', 'Phrase'];
 
   return (
     <>

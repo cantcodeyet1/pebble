@@ -4,7 +4,7 @@ import { usePebbleStore } from '../store';
 
 type Mode = 'drill' | 'agora';
 type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'register' | 'manual';
-type TierFilter = 'all' | 'word' | 'phrase' | 'colloc';
+type TierFilter = 'all' | 'word' | 'phrase';
 type TrainingStyle = 'mixed' | 'blank' | 'synonym' | 'usage' | 'write';
 
 const ChevronLeft = () => (
@@ -259,7 +259,7 @@ export const Palaestra = () => {
                 <div className="ttc-header">
                   <div>
                     <div className="ttc-name">All Logoi</div>
-                    <div className="ttc-sub">Words, phrases and collocations mixed</div>
+                    <div className="ttc-sub">Words and phrases mixed</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div className="ttc-count">8</div>
@@ -302,22 +302,7 @@ export const Palaestra = () => {
                 </div>
               </div>
 
-              <div
-                className={`tier-type-card${tierFilter === 'colloc' ? ' sel' : ''}`}
-                onClick={() => setTierFilter('colloc')}
-              >
-                <div className="ttc-header">
-                  <div>
-                    <span className="tier-badge tb-colloc" style={{ marginBottom: 6, display: 'inline-block' }}>Collocation</span>
-                    <div className="ttc-name">Collocations</div>
-                    <div className="ttc-sub">Word pairs that travel together · which word fits?</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div className="ttc-count" style={{ color: '#c4a5e8' }}>1</div>
-                    <div className="ttc-check">{tierFilter === 'colloc' && <CheckMark />}</div>
-                  </div>
-                </div>
-              </div>
+
             </div>
 
             <button className="pal-enter-btn" onClick={() => palGo(3)}>Next →</button>

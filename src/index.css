@@ -147,9 +147,8 @@ body::before {
   border-radius: 4px;
   text-transform: uppercase;
 }
-.tb-word  { background: rgba(212,160,23,.14); color: var(--gold);   border: 1px solid rgba(212,160,23,.3); }
-.tb-phrase{ background: rgba(94,196,196,.12);  color: #5ec4c4; border: 1px solid rgba(94,196,196,.25); }
-.tb-colloc{ background: rgba(196,165,232,.12); color: #c4a5e8; border: 1px solid rgba(196,165,232,.25); }
+.tb-word  { background: rgba(59,130,246,.14);  color: #60a5fa; border: 1px solid rgba(59,130,246,.3); }
+.tb-phrase{ background: rgba(196,165,232,.12); color: #c4a5e8; border: 1px solid rgba(196,165,232,.25); }
 
 /* ── FILTER CHIPS ── */
 .f-chip {
@@ -927,6 +926,19 @@ body::before {
 .ai-to.sel { background: rgba(212,160,23,.18); border-color: rgba(212,160,23,.4); color: var(--gold-bright); }
 .ai-def { font-size: 12px; color: var(--text-mid); line-height: 1.5; font-style: italic; border-left: 2px solid var(--gold-dim); padding-left: 10px; }
 .ai-ex  { font-size: 12px; color: var(--text-dim); line-height: 1.5; border-left: 2px solid rgba(74,222,128,.3); padding-left: 10px; font-style: italic; }
+.ai-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 0 8px; color: rgba(255,255,255,.18); font-size: 11px; letter-spacing: .04em; text-align: center; font-family: 'DM Sans', sans-serif; }
+.ai-skel { display: flex; flex-direction: column; gap: 10px; }
+.ai-skel-row { display: flex; gap: 7px; }
+@keyframes shimmer { from { background-position: -200% center; } to { background-position: 200% center; } }
+.skel-btn, .skel-chip, .skel-line {
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(255,255,255,.06) 25%, rgba(255,255,255,.11) 50%, rgba(255,255,255,.06) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+.skel-btn  { flex: 1; height: 34px; }
+.skel-chip { height: 24px; border-radius: 20px; }
+.skel-line { height: 11px; border-radius: 4px; }
 
 /* ── DETAIL MODAL ── */
 .det-ov {

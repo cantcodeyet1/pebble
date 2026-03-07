@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS logoi (
   example          TEXT NOT NULL,
   source           TEXT,
   register         TEXT NOT NULL,
+  phonetic         TEXT NOT NULL DEFAULT '',
+  pos              TEXT NOT NULL DEFAULT '',
+  synonyms         TEXT NOT NULL DEFAULT '[]',
   mastery_level    INTEGER NOT NULL DEFAULT 0,
   next_review_date TEXT NOT NULL,
   date_added       TEXT NOT NULL,
@@ -23,6 +26,12 @@ CREATE TABLE IF NOT EXISTS logoi (
   synced           INTEGER NOT NULL DEFAULT 0,
   updated_at       TEXT NOT NULL
 )`;
+
+const MIGRATIONS = [
+  `ALTER TABLE logoi ADD COLUMN phonetic TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE logoi ADD COLUMN pos      TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE logoi ADD COLUMN synonyms TEXT NOT NULL DEFAULT '[]'`,
+];
 
 function parseBody(req: any): Promise<any> {
   return new Promise(resolve => {
@@ -38,6 +47,9 @@ const sqliteApiPlugin = {
     const Database = _require('better-sqlite3');
     const db = new Database('./pebble.db');
     db.exec(CREATE_LOGOI_TABLE);
+    for (const sql of MIGRATIONS) {
+      try { db.exec(sql); } catch { /* column already exists */ }
+    }
 
     server.middlewares.use('/api/db/run', async (req: any, res: any) => {
       if (req.method !== 'POST') { res.statusCode = 405; res.end(); return; }
