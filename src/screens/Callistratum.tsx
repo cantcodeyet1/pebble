@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePebbleStore, Logos, Tier } from '../store';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { updateLogos } from '../db/logoi';
 
 function masteryClass(level: number): string {
   if (level === 0) return '';
@@ -29,7 +30,17 @@ export const Callistratum = () => {
   const [search, setSearch] = useState('');
   const [selectedTier, setSelectedTier] = useState<Tier | 'All'>('All');
   const [selectedLogos, setSelectedLogos] = useState<Logos | null>(null);
-  const [starred, setStarred] = useState<Set<string>>(new Set(['1', '3']));
+
+  const [starred, setStarred] = useState<Set<string>>(new Set());
+  const starredInitialized = useRef(false);
+
+  // Sync starred from store once logoi is first populated (handles async DB load on startup)
+  useEffect(() => {
+    if (!starredInitialized.current && logoi.length > 0) {
+      starredInitialized.current = true;
+      setStarred(new Set(logoi.filter(l => l.starred).map(l => l.id)));
+    }
+  }, [logoi]);
 
   const filteredLogoi = logoi.filter(l => {
     const matchesSearch = l.text.toLowerCase().includes(search.toLowerCase());
@@ -41,8 +52,9 @@ export const Callistratum = () => {
     e.stopPropagation();
     setStarred(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      const nowStarred = !next.has(id);
+      if (nowStarred) next.add(id); else next.delete(id);
+      updateLogos(id, { starred: nowStarred }).catch(() => {/* silent */});
       return next;
     });
   };
@@ -73,7 +85,9 @@ export const Callistratum = () => {
           <button
             key={t}
             className={`f-chip${selectedTier === t ? ' active' : ''}`}
-            onClick={() => setSelectedTier(t)}
+            onClick={() => { if (logoi.length > 0) setSelectedTier(t); }}
+            disabled={logoi.length === 0}
+            style={logoi.length === 0 ? { opacity: 0.3, cursor: 'default', pointerEvents: 'none' } : undefined}
           >
             {t}
           </button>
@@ -82,6 +96,35 @@ export const Callistratum = () => {
 
       {/* Logos list */}
       <div className="logos-list">
+        {filteredLogoi.length === 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 20px 32px', gap: 18 }}>
+            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.3 }}>
+              <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5l6.74-6.76Z" stroke="rgba(212,160,23,0.9)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16 8L2 22" stroke="rgba(212,160,23,0.6)" strokeWidth="1.2" strokeLinecap="round"/>
+              <path d="M17.5 15H9" stroke="rgba(212,160,23,0.5)" strokeWidth="1" strokeLinecap="round"/>
+            </svg>
+            <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 600, fontStyle: 'italic', color: 'var(--gold-bright)', opacity: 0.75 }}>
+                {logoi.length === 0 ? 'The library awaits' : 'No logoi found'}
+              </div>
+              {logoi.length === 0 ? (
+                <>
+                  <div style={{ fontSize: 12, color: 'var(--text-dim)', fontStyle: 'italic', lineHeight: 1.7, borderLeft: '2px solid rgba(212,160,23,0.25)', paddingLeft: 12, textAlign: 'left' }}>
+                    "As a vessel is known by the sound, whether it be cracked or not — so men are proved by their words."
+                  </div>
+                  <div style={{ fontSize: 10, letterSpacing: '0.16em', color: 'var(--gold-dim)', textTransform: 'uppercase' }}>— Demosthenes</div>
+                  <div style={{ fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-dim)', textTransform: 'uppercase', marginTop: 4 }}>
+                    Tap <span style={{ color: 'var(--gold)', fontWeight: 600 }}>+</span> to inscribe your first logos
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 11, letterSpacing: '0.12em', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+                  Try a different search or filter
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         {filteredLogoi.map(logos => (
           <div
             key={logos.id}

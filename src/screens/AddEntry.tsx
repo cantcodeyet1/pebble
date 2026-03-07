@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usePebbleStore, Tier, Register } from '../store';
+import { addLogos as dbAddLogos } from '../db/logoi';
 
 const tiers: Tier[] = ['Word', 'Phrase', 'Collocation'];
 const registers: Register[] = ['Formal', 'Academic', 'Literary', 'Informal', 'Idiomatic'];
@@ -16,6 +17,7 @@ export const AddEntry = () => {
   const addOpen = usePebbleStore(s => s.addOpen);
   const setAddOpen = usePebbleStore(s => s.setAddOpen);
   const addLogos = usePebbleStore(s => s.addLogos);
+  const appendLogos = usePebbleStore(s => s.appendLogos);
 
   const [text, setText] = useState('');
   const [source, setSource] = useState('');
@@ -72,16 +74,29 @@ export const AddEntry = () => {
 
   const close = () => setAddOpen(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!text) return;
-    addLogos({
-      text,
-      tier,
-      definition: aiDef.replace(/^"|"$/g, ''),
-      exampleSentence: aiEx.replace(/^"|"$/g, ''),
-      sourceSentence: source || undefined,
-      register,
-    });
+    const entry           = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    const definition      = aiDef.replace(/^"|"$/g, '');
+    const exampleSentence = aiEx.replace(/^"|"$/g, '');
+
+    try {
+      // Persist to SQLite; returned Logos is already mapped to store shape
+      const saved = await dbAddLogos({
+        entry:    entry,
+        tier:     tier.toLowerCase(),
+        definition,
+        example:  exampleSentence,
+        source:   source || null,
+        register: register.toLowerCase(),
+      });
+      appendLogos(saved);
+    } catch (err) {
+      // DB unavailable (e.g. cold dev start) — fall back to in-memory only
+      console.warn('[Pebble] DB write failed — in-memory only:', err);
+      addLogos({ text: entry, tier, definition, exampleSentence, sourceSentence: source || undefined, register });
+    }
+
     close();
   };
 
@@ -96,7 +111,7 @@ export const AddEntry = () => {
         <div className="add-hdr">
           <button className="add-cls" onClick={close}>✕</button>
           <div className="add-ttl">New Logos</div>
-          <button className="add-sv" onClick={handleSave} disabled={!text}>Save</button>
+          <button className="add-sv" onClick={() => { void handleSave(); }} disabled={!text}>Save</button>
         </div>
 
         <input
