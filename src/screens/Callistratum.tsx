@@ -240,7 +240,11 @@ export const Callistratum = () => {
 
             <button
               className="dc-train-btn"
-              onClick={() => { setSelectedLogos(null); navigate('/palaestra'); }}
+              onClick={() => {
+                const id = selectedLogos.id;
+                setSelectedLogos(null);
+                navigate('/palaestra', { state: { mode: 'agora', step: 3, manualIds: [id] } });
+              }}
             >
               Train this Logos →
             </button>

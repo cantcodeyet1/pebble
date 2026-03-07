@@ -56,7 +56,7 @@ export const Ecclesia = () => {
     logoi.some(l => l.text.toLowerCase() === slides[i].word.toLowerCase());
 
   const saveSlide = async (i: number) => {
-    if (isSaved(i)) return;
+    if (isSaved(i)) return logoi.find(l => l.text.toLowerCase() === slides[i].word.toLowerCase()) ?? null;
     const s = slides[i];
     try {
       const result = await dbAddLogos({
@@ -70,8 +70,18 @@ export const Ecclesia = () => {
         synonyms: s.syns,
       });
       appendLogos(result);
+      return result;
     } catch {
-      // DB unavailable — silently ignore
+      return null;
+    }
+  };
+
+  const trainSlide = async (i: number) => {
+    const logos = await saveSlide(i);
+    if (logos) {
+      navigate('/palaestra', { state: { mode: 'agora', step: 3, manualIds: [logos.id] } });
+    } else {
+      navigate('/palaestra');
     }
   };
   const dragStartRef = useRef<number | null>(null);
@@ -142,7 +152,7 @@ export const Ecclesia = () => {
                 <div className="syn-row">
                   {s.syns.map(syn => <span className="syn-chip" key={syn}>{syn}</span>)}
                 </div>
-                <button className="train-btn" onClick={() => navigate('/palaestra')}>{s.btnLabel}</button>
+                <button className="train-btn" onClick={() => { void trainSlide(i); }}>{s.btnLabel}</button>
               </div>
             ))}
           </div>

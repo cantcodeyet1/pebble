@@ -7,7 +7,7 @@ import { addDays } from 'date-fns';
 import { evaluateSentence } from '../services/ai.service';
 
 type Mode = 'drill' | 'agora';
-type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'register';
+type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'register' | 'manual';
 type TierFilter = 'all' | 'word' | 'phrase';
 type TrainingStyle = 'mixed' | 'blank' | 'synonym' | 'usage' | 'write';
 type QuestionType = 'blank' | 'synonym' | 'usage' | 'write';
@@ -125,16 +125,17 @@ const StarIcon = ({ filled }: { filled: boolean }) => (
 export const Palaestra = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const locState = (location.state ?? {}) as { mode?: Mode; step?: number; autoStart?: boolean };
+  const locState = (location.state ?? {}) as { mode?: Mode; step?: number; autoStart?: boolean; manualIds?: string[] };
   const { logoi, setBoutOpen, boutOpen, updateMastery, recordActivity } = usePebbleStore();
 
   // Panel state
   const [step, setStep]                       = useState(locState.step ?? 0);
   const [mode, setMode]                       = useState<Mode>(locState.mode ?? 'drill');
-  const [filter, setFilter]                   = useState<Filter>('starred');
+  const [filter, setFilter]                   = useState<Filter>((locState.manualIds?.length ?? 0) > 0 ? 'manual' : 'starred');
   const [tierFilter, setTierFilter]           = useState<TierFilter>('all');
   const [trainingStyle, setTrainingStyle]     = useState<TrainingStyle>('mixed');
   const [selectedRegisters, setSelectedRegisters] = useState<string[]>([]);
+  const [manualSelection, setManualSelection]     = useState<Set<string>>(new Set(locState.manualIds ?? []));
 
   // Bout state
   const [boutQuestions, setBoutQuestions]   = useState<BoutQuestion[]>([]);
@@ -166,8 +167,11 @@ export const Palaestra = () => {
     if (filter === 'register') return selectedRegisters.length > 0
       ? r.filter(l => selectedRegisters.includes(l.register.toLowerCase()))
       : r;
+    if (filter === 'manual') return manualSelection.size > 0
+      ? r.filter(l => manualSelection.has(l.id))
+      : r;
     return r;
-  }, [logoi, mode, filter, selectedRegisters]);
+  }, [logoi, mode, filter, selectedRegisters, manualSelection]);
 
   const filteredByTier = useMemo(() => {
     if (tierFilter === 'word')   return filteredByMode.filter(l => l.tier === 'Word');
@@ -195,12 +199,22 @@ export const Palaestra = () => {
       else if (filter === 'strong')   pool = pool.filter(l => l.masteryLevel >= 4);
       else if (filter === 'register' && selectedRegisters.length > 0)
         pool = pool.filter(l => selectedRegisters.includes(l.register.toLowerCase()));
+      else if (filter === 'manual' && manualSelection.size > 0)
+        pool = pool.filter(l => manualSelection.has(l.id));
     }
     if (tierFilter === 'word')   pool = pool.filter(l => l.tier === 'Word');
     if (tierFilter === 'phrase') pool = pool.filter(l => l.tier === 'Phrase');
     if (pool.length === 0) pool = [...logoi];
 
-    const questions = shuffle(pool).map(l => buildQuestion(l, pickQType(trainingStyle, l), logoi));
+    let questions: BoutQuestion[];
+    if (trainingStyle === 'mixed' && pool.length === 1) {
+      const l = pool[0];
+      const types: QuestionType[] = ['blank', 'usage', 'write'];
+      if (l.synonyms?.length) types.push('synonym');
+      questions = shuffle(types.map(t => buildQuestion(l, t, logoi)));
+    } else {
+      questions = shuffle(pool).map(l => buildQuestion(l, pickQType(trainingStyle, l), logoi));
+    }
     setBoutQuestions(questions);
     setSessionResults([]);
     setBoutDone(false);
