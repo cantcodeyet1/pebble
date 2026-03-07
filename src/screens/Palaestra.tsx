@@ -3,9 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { usePebbleStore, Logos } from '../store';
 import { updateLogos } from '../db/logoi';
 import { addDays } from 'date-fns';
+import { evaluateSentence } from '../services/ai.service';
 
 type Mode = 'drill' | 'agora';
-type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'register' | 'manual';
+type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'register';
 type TierFilter = 'all' | 'word' | 'phrase';
 type TrainingStyle = 'mixed' | 'blank' | 'synonym' | 'usage' | 'write';
 type QuestionType = 'blank' | 'synonym' | 'usage' | 'write';
@@ -133,7 +134,6 @@ export const Palaestra = () => {
   const [tierFilter, setTierFilter]           = useState<TierFilter>('all');
   const [trainingStyle, setTrainingStyle]     = useState<TrainingStyle>('mixed');
   const [selectedRegisters, setSelectedRegisters] = useState<string[]>([]);
-  const [manualSelection, setManualSelection]     = useState<Set<string>>(new Set());
 
   // Bout state
   const [boutQuestions, setBoutQuestions]   = useState<BoutQuestion[]>([]);
@@ -144,6 +144,8 @@ export const Palaestra = () => {
   const [boutStarred, setBoutStarred]       = useState<Set<string>>(new Set());
   const [endStarred, setEndStarred]         = useState<Set<string>>(new Set());
   const [writeInput, setWriteInput]         = useState('');
+  const [evaluating, setEvaluating]         = useState(false);
+  const [aiFeedback, setAiFeedback]         = useState<string | null>(null);
 
   const currentQ = boutQuestions[qIndex] ?? null;
   const totalQ   = boutQuestions.length;
@@ -163,11 +165,8 @@ export const Palaestra = () => {
     if (filter === 'register') return selectedRegisters.length > 0
       ? r.filter(l => selectedRegisters.includes(l.register.toLowerCase()))
       : r;
-    if (filter === 'manual')   return manualSelection.size > 0
-      ? r.filter(l => manualSelection.has(l.id))
-      : r;
     return r;
-  }, [logoi, mode, filter, selectedRegisters, manualSelection]);
+  }, [logoi, mode, filter, selectedRegisters]);
 
   const filteredByTier = useMemo(() => {
     if (tierFilter === 'word')   return filteredByMode.filter(l => l.tier === 'Word');
@@ -195,8 +194,6 @@ export const Palaestra = () => {
       else if (filter === 'strong')   pool = pool.filter(l => l.masteryLevel >= 4);
       else if (filter === 'register' && selectedRegisters.length > 0)
         pool = pool.filter(l => selectedRegisters.includes(l.register.toLowerCase()));
-      else if (filter === 'manual' && manualSelection.size > 0)
-        pool = pool.filter(l => manualSelection.has(l.id));
     }
     if (tierFilter === 'word')   pool = pool.filter(l => l.tier === 'Word');
     if (tierFilter === 'phrase') pool = pool.filter(l => l.tier === 'Phrase');
@@ -210,6 +207,7 @@ export const Palaestra = () => {
     setQIndex(0);
     setAnswered(null);
     setWriteInput('');
+    setAiFeedback(null);
     setBoutOpen(true);
   };
 
@@ -238,6 +236,7 @@ export const Palaestra = () => {
       setQIndex(i => i + 1);
       setAnswered(null);
       setWriteInput('');
+      setAiFeedback(null);
     } else {
       setBoutDone(true);
     }
@@ -321,11 +320,6 @@ export const Palaestra = () => {
       id: 'register', name: 'By Register',
       sub: 'Academic · Literary · Formal…',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
-    },
-    {
-      id: 'manual', name: 'Select Manually',
-      sub: `Pick from your ${logoi.length} logoi`,
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 11V6a2 2 0 00-2-2 2 2 0 00-2 2"/><path d="M14 10V4a2 2 0 00-2-2 2 2 0 00-2 2v2"/><path d="M10 10.5V6a2 2 0 00-2-2 2 2 0 00-2 2v8"/><path d="M18 8a2 2 0 114 0v6a8 8 0 01-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6c-.78-.79-.78-2.05 0-2.84a2 2 0 012.83 0l2.76 2.76"/></svg>,
     },
   ];
 
@@ -462,49 +456,6 @@ export const Palaestra = () => {
               </div>
             )}
 
-            {filter === 'manual' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div className="section-label" style={{ marginBottom: 0 }}>
-                  Select logoi · {manualSelection.size} chosen
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
-                  {logoi.map(l => {
-                    const selected = manualSelection.has(l.id);
-                    return (
-                      <div
-                        key={l.id}
-                        onClick={() => setManualSelection(prev => {
-                          const next = new Set(prev);
-                          if (selected) next.delete(l.id); else next.add(l.id);
-                          return next;
-                        })}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '9px 12px', borderRadius: 10, cursor: 'pointer',
-                          background: selected ? 'rgba(212,160,23,.12)' : 'rgba(255,255,255,.04)',
-                          border: `1px solid ${selected ? 'rgba(212,160,23,.3)' : 'rgba(255,255,255,.07)'}`,
-                        }}
-                      >
-                        <div style={{
-                          width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                          border: `1.5px solid ${selected ? 'var(--gold)' : 'rgba(255,255,255,.2)'}`,
-                          background: selected ? 'var(--gold)' : 'transparent',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
-                          {selected && <CheckMark />}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, fontStyle: 'italic', color: 'var(--text)', lineHeight: 1.2 }}>{l.text}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.definition}</div>
-                        </div>
-                        <span className={`tier-badge ${l.tier === 'Word' ? 'tb-word' : 'tb-phrase'}`} style={{ fontSize: 9, padding: '2px 6px' }}>{l.tier}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             <button className="pal-enter-btn" onClick={() => palGo(2)}>Next →</button>
           </div>
 
@@ -638,7 +589,7 @@ export const Palaestra = () => {
                   <button className="pal-enter-btn" onClick={startBout}>Train Again →</button>
                   <button
                     style={{ background: 'none', border: '1px solid rgba(255,255,255,.1)', borderRadius: 12, padding: '12px', fontSize: 14, color: 'var(--text-dim)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
-                    onClick={exitBout}
+                    onClick={() => { setBoutOpen(false); setBoutDone(false); setStep(0); }}
                   >
                     Return to Hall
                   </button>
@@ -690,20 +641,42 @@ export const Palaestra = () => {
                       placeholder="Write your sentence here…"
                       value={writeInput}
                       onChange={e => setWriteInput(e.target.value)}
+                      disabled={answered !== null}
                     />
                     {answered === null && (
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => selfMark(false)} style={{ flex: 1, background: 'rgba(248,113,113,.1)', border: '1px solid rgba(248,113,113,.2)', borderRadius: 10, padding: '10px', fontSize: 13, color: '#f87171', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                          Missed it
-                        </button>
-                        <button onClick={() => selfMark(true)} style={{ flex: 1, background: 'rgba(74,222,128,.1)', border: '1px solid rgba(74,222,128,.2)', borderRadius: 10, padding: '10px', fontSize: 13, color: '#4ade80', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-                          Got it
-                        </button>
-                      </div>
+                      <button
+                        disabled={!writeInput.trim() || evaluating}
+                        onClick={async () => {
+                          if (!writeInput.trim() || !currentQ) return;
+                          setEvaluating(true);
+                          try {
+                            const result = await evaluateSentence(currentQ.logos.text, currentQ.logos.definition, writeInput);
+                            setAiFeedback(result.feedback);
+                            selfMark(result.correct);
+                          } catch {
+                            selfMark(false);
+                          } finally {
+                            setEvaluating(false);
+                          }
+                        }}
+                        style={{ background: 'var(--gold)', color: '#000', border: 'none', borderRadius: 10, padding: '11px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: (!writeInput.trim() || evaluating) ? 0.5 : 1 }}
+                      >
+                        {evaluating ? 'Evaluating…' : 'Submit →'}
+                      </button>
                     )}
                     {answered !== null && (
-                      <div className="feedback-bar">
-                        <div className="fb-note">{currentQ.feedback}</div>
+                      <div className="feedback-bar" style={answered === -1 ? { background: 'rgba(107,26,26,.4)', borderColor: 'rgba(248,113,113,.25)' } : {}}>
+                        {answered === 0
+                          ? <div className="fb-correct" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                              Correct
+                            </div>
+                          : <div className="fb-correct" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f87171' }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                              Needs work
+                            </div>
+                        }
+                        <div className="fb-note">{aiFeedback ?? currentQ.feedback}</div>
                         <button style={{ marginTop: 6, background: 'var(--gold)', color: '#000', border: 'none', borderRadius: 10, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={nextQ}>
                           {qIndex < totalQ - 1 ? 'Continue →' : 'Finish Session'}
                         </button>
