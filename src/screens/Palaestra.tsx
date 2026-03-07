@@ -622,7 +622,17 @@ export const Palaestra = () => {
 
                 <div className="q-card">
                   <div className="q-type">{qTypeLabel[currentQ.qType]}</div>
-                  <div className="q-word">{currentQ.logos.text}</div>
+                  {currentQ.qType !== 'blank' && (
+                    <>
+                      <div className="q-word">{currentQ.logos.text}</div>
+                      {(currentQ.logos.phonetic || currentQ.logos.pos) && (
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
+                          {currentQ.logos.phonetic && <span className="lotd-sub">{currentQ.logos.phonetic}</span>}
+                          {currentQ.logos.pos && <span className="lotd-pos">{currentQ.logos.pos}</span>}
+                        </div>
+                      )}
+                    </>
+                  )}
                   <div className="q-text">
                     {currentQ.qType === 'blank'
                       ? (() => {
@@ -635,9 +645,9 @@ export const Palaestra = () => {
                 </div>
 
                 {currentQ.qType === 'write' ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 20px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 20px', marginTop: -8 }}>
                     <textarea
-                      style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '12px', fontSize: 13, color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", minHeight: 80, resize: 'none', outline: 'none' }}
+                      style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '14px', fontSize: 13, color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", minHeight: 120, resize: 'none', outline: 'none', lineHeight: 1.6 }}
                       placeholder="Write your sentence here…"
                       value={writeInput}
                       onChange={e => setWriteInput(e.target.value)}
