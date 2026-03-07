@@ -160,34 +160,64 @@ export const Callistratum = () => {
             <button className="dc-x" onClick={() => setSelectedLogos(null)}>✕</button>
             <div className="dc-top">Logos Detail</div>
             <div className="dc-word">{selectedLogos.text}</div>
+
+            {(selectedLogos.phonetic || selectedLogos.pos) && (
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+                {selectedLogos.phonetic && <span className="lotd-sub">{selectedLogos.phonetic}</span>}
+                {selectedLogos.pos && <span className="lotd-pos">{selectedLogos.pos}</span>}
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
               <span className={`tier-badge ${tierClass(selectedLogos.tier)}`}>{selectedLogos.tier}</span>
               <span className="reg-lbl" style={{ display: 'flex', alignItems: 'center' }}>{selectedLogos.register}</span>
             </div>
 
             <div className="dc-sec">
-              <div className="dc-sh"><span>📖</span> Definition</div>
+              <div className="dc-sh">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>
+                </svg>
+                Definition
+              </div>
               <div className="dc-st">"{selectedLogos.definition}"</div>
             </div>
 
             <div className="dc-sec">
-              <div className="dc-sh"><span>↗</span> Example Usage</div>
+              <div className="dc-sh">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
+                  <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/>
+                </svg>
+                Example Usage
+              </div>
               <div className="dc-st">{selectedLogos.exampleSentence}</div>
             </div>
 
-            {selectedLogos.sourceSentence && (
+            {selectedLogos.synonyms && selectedLogos.synonyms.length > 0 && (
               <div className="dc-sec">
-                <div className="dc-sh"><span>📍</span> Source</div>
-                <div className="dc-st">{selectedLogos.sourceSentence}</div>
+                <div className="dc-sh">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8 6H5a2 2 0 00-2 2v9a2 2 0 002 2h3"/><path d="M16 6h3a2 2 0 012 2v9a2 2 0 01-2 2h-3"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                  </svg>
+                  Synonyms
+                </div>
+                <div className="syn-row" style={{ marginTop: 0 }}>
+                  {selectedLogos.synonyms.map(s => <span className="syn-chip" key={s}>{s}</span>)}
+                </div>
               </div>
             )}
 
-            {selectedLogos.structuralSplit && (
+            {selectedLogos.sourceSentence && (
               <div className="dc-sec">
-                <div className="dc-sh"><span>⚙</span> Structure</div>
-                <div className="dc-st">
-                  [{selectedLogos.structuralSplit.part1}] + [{selectedLogos.structuralSplit.part2}] — {selectedLogos.structuralSplit.type}
+                <div className="dc-sh">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  Source
                 </div>
+                <div className="dc-st">{selectedLogos.sourceSentence}</div>
               </div>
             )}
 

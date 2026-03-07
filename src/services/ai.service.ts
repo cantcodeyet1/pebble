@@ -30,9 +30,8 @@ export async function classify (entry: string): Promise<ClassifyResult> {
           'Phrase is any multi-word expression — this includes idioms whose meaning cannot be derived from parts e.g. "bite the bullet", "hit the ground running", AND collocations where words habitually co-occur e.g. "deeply flawed", "make a decision", "commit a crime". If the input has more than one word, it is always a Phrase.), ' +
           '"pos" (part of speech — ' +
           'if tier is Word: return the part of speech in title case e.g. Adjective, Noun, Verb, Adverb. ' +
-          'if tier is Collocation: return the structural breakdown in uppercase e.g. "ADVERB + ADJECTIVE", "VERB + NOUN", "VERB + NOUN + VERB". ' +
-          'if tier is Phrase: return "Idiomatic Expression", "Verb Phrase", or "Noun Phrase" — never a structural breakdown), ' +
-          '"phonetic" (if tier is Word: IPA pronunciation e.g. /ˈef.ɪ.mər.əl/. If tier is Collocation or Phrase: return empty string), ' +
+          'if tier is Phrase: return "Idiomatic Expression", "Verb Phrase", "Collocation" or "Noun Phrase" — never a structural breakdown), ' +
+          '"phonetic" (if tier is Word: IPA pronunciation e.g. /ˈef.ɪ.mər.əl/. If tier is Phrase: return empty string), ' +
           '"register" (one of: Formal, Academic, Literary, Informal, Idiomatic), ' +
           '"definition" (a concise definition in sentence case), ' +
           '"synonyms" (a JSON array of related words or phrases in title case e.g. ["Fleeting", "Transient"] for words, ["Get Off To A Flying Start"] for phrases), ' +
