@@ -1,8 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePebbleStore } from '../store';
 import { DrillIcon, AgoraIcon } from './Palaestra';
 import { addLogos as dbAddLogos } from '../db/logoi';
+
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 const slides = [
   {
@@ -31,18 +33,23 @@ const slides = [
   },
 ];
 
-const weekDays = [
-  { lbl: 'M', state: 'done' },
-  { lbl: 'T', state: 'done' },
-  { lbl: 'W', state: 'done' },
-  { lbl: 'T', state: 'done' },
-  { lbl: 'F', state: 'today' },
-  { lbl: 'S', state: '' },
-  { lbl: 'S', state: '' },
-];
-
 export const Ecclesia = () => {
-  const { streak, logoi, appendLogos } = usePebbleStore();
+  const { streak, logoi, appendLogos, activityDates } = usePebbleStore();
+
+  const weekDays = useMemo(() => {
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    const monOffset = (today.getDay() + 6) % 7; // 0=Mon … 6=Sun
+    return DAY_LABELS.map((lbl, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - monOffset + i);
+      const dateStr = d.toISOString().slice(0, 10);
+      let state = '';
+      if (dateStr === todayStr) state = 'today';
+      else if (dateStr < todayStr && activityDates.includes(dateStr)) state = 'done';
+      return { lbl, state };
+    });
+  }, [activityDates]);
   const navigate = useNavigate();
   const [slide, setSlide] = useState(0);
   const isSaved = (i: number) =>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { usePebbleStore, Logos } from '../store';
 import { updateLogos } from '../db/logoi';
+import { recordActivityDb } from '../db/activity';
 import { addDays } from 'date-fns';
 import { evaluateSentence } from '../services/ai.service';
 
@@ -125,7 +126,7 @@ export const Palaestra = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const locState = (location.state ?? {}) as { mode?: Mode; step?: number; autoStart?: boolean };
-  const { logoi, setBoutOpen, boutOpen, updateMastery } = usePebbleStore();
+  const { logoi, setBoutOpen, boutOpen, updateMastery, recordActivity } = usePebbleStore();
 
   // Panel state
   const [step, setStep]                       = useState(locState.step ?? 0);
@@ -239,6 +240,9 @@ export const Palaestra = () => {
       setAiFeedback(null);
     } else {
       setBoutDone(true);
+      recordActivity();
+      const today = new Date().toISOString().slice(0, 10);
+      recordActivityDb(today).catch(() => {});
     }
   };
 

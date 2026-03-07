@@ -27,6 +27,11 @@ CREATE TABLE IF NOT EXISTS logoi (
   updated_at       TEXT NOT NULL
 )`;
 
+const CREATE_ACTIVITY_TABLE = `
+CREATE TABLE IF NOT EXISTS activity (
+  date TEXT PRIMARY KEY NOT NULL
+)`;
+
 const MIGRATIONS = [
   `ALTER TABLE logoi ADD COLUMN phonetic TEXT NOT NULL DEFAULT ''`,
   `ALTER TABLE logoi ADD COLUMN pos      TEXT NOT NULL DEFAULT ''`,
@@ -47,6 +52,7 @@ const sqliteApiPlugin = {
     const Database = _require('better-sqlite3');
     const db = new Database('./pebble.db');
     db.exec(CREATE_LOGOI_TABLE);
+    db.exec(CREATE_ACTIVITY_TABLE);
     for (const sql of MIGRATIONS) {
       try { db.exec(sql); } catch { /* column already exists */ }
     }
