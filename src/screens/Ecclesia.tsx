@@ -164,7 +164,7 @@ export const Ecclesia = () => {
       {/* Begin a Session */}
       <div className="section-label">Begin a Session</div>
       <div className="session-cards">
-        <div className="session-card-h primary" onClick={() => navigate('/palaestra')}>
+        <div className="session-card-h primary" onClick={() => navigate('/palaestra', { state: { mode: 'drill', autoStart: true } })}>
           <div className="sch-icon"><DrillIcon size={26} color="var(--gold)" /></div>
           <div className="sch-body">
             <div className="sch-name">The Drill</div>
@@ -181,7 +181,7 @@ export const Ecclesia = () => {
           </div>
         </div>
 
-        <div className="session-card-h" onClick={() => navigate('/palaestra')}>
+        <div className="session-card-h" onClick={() => navigate('/palaestra', { state: { mode: 'agora', step: 1 } })}>
           <div className="sch-icon"><AgoraIcon size={22} color="var(--gold-dim)" /></div>
           <div className="sch-body">
             <div className="sch-name">The Agora</div>

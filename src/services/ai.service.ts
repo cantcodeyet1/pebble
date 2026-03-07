@@ -45,8 +45,32 @@ export async function classify (entry: string): Promise<ClassifyResult> {
     ],
     response_format: { type: 'json_object' }
   })
-  console.log(JSON.parse(response.choices[0].message.content))
   return JSON.parse(
     response.choices[0].message.content || '{}'
   ) as ClassifyResult
+}
+
+export type EvalResult = { correct: boolean; feedback: string }
+
+export async function evaluateSentence(entry: string, definition: string, sentence: string): Promise<EvalResult> {
+  const response = await groq.chat.completions.create({
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You are evaluating whether a learner has used a vocabulary word correctly in a sentence. ' +
+          'Respond with a JSON object: { "correct": boolean, "feedback": string }. ' +
+          '"correct" is true if the word is used naturally and its meaning matches the definition given. ' +
+          '"feedback" is 1–2 sentences of specific, constructive feedback — if correct, briefly affirm why; if incorrect, explain what went wrong and how to improve. ' +
+          'Respond with valid JSON only. No markdown, no preamble.'
+      },
+      {
+        role: 'user',
+        content: `Word: "${entry}"\nDefinition: "${definition}"\nLearner's sentence: "${sentence}"`
+      }
+    ],
+    response_format: { type: 'json_object' }
+  })
+  return JSON.parse(response.choices[0].message.content || '{}') as EvalResult
 }
