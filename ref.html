@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Pebble — The Path of Demosthenes</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0d0b;--gold:#d4a017;--gold-bright:#f0bc2e;--gold-dim:#8a6a10;
+  --glass:rgba(30,27,20,.65);--glass-border:rgba(212,160,23,.15);
+  --text:#f0ead8;--text-dim:rgba(240,234,216,.42);--text-mid:rgba(240,234,216,.68);
+  --radius:16px;--tab-h:72px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;justify-content:center;overflow:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.045;pointer-events:none;z-index:9999;}
+.phone{width:390px;height:844px;position:relative;overflow:hidden;background:var(--bg);}
+
+/* ── SCREENS ── */
+.screen{position:absolute;inset:0;bottom:var(--tab-h);overflow-y:auto;overflow-x:hidden;padding:52px 20px 28px;display:none;flex-direction:column;gap:18px;scrollbar-width:none;}
+.screen::-webkit-scrollbar{display:none;}
+.screen.active{display:flex;}
+#screen-palaestra{bottom:0;padding:0;overflow:hidden;}
+
+.screen-title{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;font-style:italic;color:var(--gold-bright);line-height:1;}
+.screen-sub{font-size:10px;font-weight:500;letter-spacing:.18em;color:var(--text-dim);text-transform:uppercase;margin-top:3px;}
+.section-label{font-size:10px;font-weight:600;letter-spacing:.18em;color:var(--text-dim);text-transform:uppercase;}
+.phil-section-hdr{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:600;letter-spacing:.18em;color:var(--text-dim);text-transform:uppercase;}
+
+
+.card{background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:var(--radius);padding:18px;position:relative;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.28),transparent);border-radius:var(--radius) var(--radius) 0 0;}
+
+.tier-badge{display:inline-block;font-size:9px;font-weight:600;letter-spacing:.14em;padding:3px 8px;border-radius:4px;text-transform:uppercase;}
+.tb-word{background:rgba(212,160,23,.14);color:var(--gold);border:1px solid rgba(212,160,23,.3);}
+.tb-phrase{background:rgba(94,196,196,.12);color:#5ec4c4;border:1px solid rgba(94,196,196,.25);}
+.tb-colloc{background:rgba(196,165,232,.12);color:#c4a5e8;border:1px solid rgba(196,165,232,.25);}
+
+.f-chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);color:var(--text-mid);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.f-chip.active{background:var(--gold);border-color:var(--gold);color:#000;font-weight:600;}
+
+.logos-list{display:flex;flex-direction:column;gap:9px;}
+.logos-item{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:14px;padding:15px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s;position:relative;overflow:hidden;}
+.logos-item::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.18),transparent);}
+.logos-item:active{background:rgba(255,255,255,.08);}
+.logos-item.ml{background:rgba(192,68,14,.1);}.logos-item.mf{background:rgba(26,107,107,.1);}.logos-item.mm{background:rgba(26,77,46,.1);}.logos-item.mfg{background:rgba(107,26,26,.1);}
+.li-name{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;font-style:italic;color:var(--text);margin-bottom:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.reg-lbl{font-size:9px;font-weight:600;letter-spacing:.15em;color:var(--gold-dim);text-transform:uppercase;}
+.mdots{display:flex;gap:3px;}
+.mdot{width:7px;height:7px;border-radius:50%;background:rgba(212,160,23,.18);}
+.mdot.f{background:var(--gold);}
+.chevron{color:var(--text-dim);font-size:16px;margin-left:8px;}
+.star-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;color:var(--text-dim);transition:color .15s;line-height:1;}
+.star-btn.starred{color:var(--gold-bright);}
+
+/* ── ECCLESIA ── */
+.ecclesia-header{display:flex;justify-content:space-between;align-items:flex-start;}
+.streak-pill{display:flex;align-items:center;gap:6px;background:rgba(212,160,23,.14);border:1px solid rgba(212,160,23,.3);border-radius:20px;padding:5px 12px;font-size:13px;font-weight:600;color:var(--gold-bright);}
+.lotd-carousel-wrap{position:relative;overflow:hidden;border-radius:var(--radius);}
+.lotd-track{display:flex;transition:transform .35s cubic-bezier(.4,0,.2,1);}
+.lotd-slide{min-width:100%;padding:20px;background:var(--glass);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--glass-border);border-radius:var(--radius);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px;}
+.lotd-slide::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.3),transparent);}
+.lotd-type-row{display:flex;align-items:center;gap:8px;}
+.lotd-day{font-size:10px;font-weight:600;letter-spacing:.16em;color:var(--text-dim);text-transform:uppercase;margin-left:auto;}
+.lotd-word{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;font-style:italic;color:var(--text);line-height:1.1;}
+.lotd-sub{font-size:11px;color:var(--text-dim);font-style:italic;}
+.lotd-pos{font-size:11px;font-weight:500;color:var(--gold-dim);text-transform:uppercase;letter-spacing:.1em;}
+.lotd-def{font-size:13px;color:var(--text-mid);line-height:1.5;font-style:italic;}
+.lotd-ex{font-size:12px;color:var(--text-dim);line-height:1.5;border-left:2px solid var(--gold-dim);padding-left:10px;}
+.syn-row{display:flex;gap:6px;flex-wrap:wrap;}
+.syn-chip{font-size:10px;padding:3px 9px;border-radius:10px;border:1px solid rgba(212,160,23,.2);color:var(--gold-dim);background:rgba(212,160,23,.06);}
+.train-btn{background:var(--gold);color:#0e0d0b;border:none;border-radius:20px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;width:fit-content;margin-top:2px;transition:background .15s,transform .1s;}
+.train-btn:active{transform:scale(.97);background:var(--gold-bright);}
+.carousel-dots{display:flex;justify-content:center;gap:6px;margin-top:10px;}
+.cdot{width:6px;height:6px;border-radius:50%;background:rgba(212,160,23,.2);transition:background .2s,width .2s;}
+.cdot.active{background:var(--gold-bright);width:18px;border-radius:3px;}
+.hero-card{background:linear-gradient(145deg,rgba(40,34,15,.85),rgba(20,18,10,.9));border-color:rgba(212,160,23,.22);}
+.week-row{display:flex;gap:6px;}
+.week-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.wlbl{font-size:9px;font-weight:500;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;}
+.wdot{width:30px;height:30px;border-radius:50%;border:1px solid rgba(212,160,23,.18);background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;font-size:12px;}
+.wdot.done{background:var(--gold);border-color:var(--gold);color:#000;font-size:13px;}
+.wdot.today{border-color:var(--gold-bright);background:rgba(212,160,23,.12);}
+
+/* Horizontal session cards */
+.session-cards{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;}
+.session-card-h{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:16px;padding:20px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;display:flex;align-items:center;gap:16px;flex:1;}
+.session-card-h::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.25),transparent);}
+.session-card-h:active{transform:scale(.98);}
+.session-card-h.primary{border-color:rgba(212,160,23,.3);background:rgba(40,30,8,.75);}
+.sch-icon{font-size:30px;flex-shrink:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;}
+.sch-body{flex:1;}
+.sch-name{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;font-style:italic;color:var(--text);margin-bottom:3px;}
+.sch-desc{font-size:11px;color:var(--text-dim);line-height:1.4;}
+.sch-badge{background:var(--gold);color:#000;font-size:9px;font-weight:700;padding:3px 8px;border-radius:10px;width:fit-content;margin-top:8px;}
+.sch-arrow{color:var(--text-dim);flex-shrink:0;}
+
+/* ── PALAESTRA MULTI-PANEL ── */
+.pal-outer{position:absolute;inset:0;overflow:hidden;}
+.pal-slider{display:flex;height:100%;width:500%;transition:transform .38s cubic-bezier(.4,0,.2,1);}
+.pal-panel{width:20%;height:100%;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:52px 20px 88px;display:flex;flex-direction:column;gap:20px;flex-shrink:0;}
+.pal-panel::-webkit-scrollbar{display:none;}
+
+.pal-top{display:flex;align-items:center;gap:14px;flex-shrink:0;}
+.pal-back{width:36px;height:36px;background:rgba(255,255,255,.06);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-mid);flex-shrink:0;}
+.pal-step-title{flex:1;}
+
+/* Mode cards — full width stacked */
+.mode-card{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:16px;padding:20px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;display:flex;align-items:flex-start;gap:16px;}
+.mode-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.2),transparent);}
+.mode-card.sel{background:rgba(40,30,8,.88);border-color:rgba(212,160,23,.4);}
+.mode-card.sel::before{background:linear-gradient(90deg,transparent,rgba(212,160,23,.5),transparent);}
+.mode-card:active{transform:scale(.98);}
+.mc-icon{font-size:28px;flex-shrink:0;margin-top:2px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;}
+.mc-body{}
+.mc-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;font-style:italic;color:var(--text);margin-bottom:4px;}
+.mc-desc{font-size:12px;color:var(--text-dim);line-height:1.5;}
+.mc-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.mc-badge{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:10px;background:rgba(212,160,23,.14);color:var(--gold);border:1px solid rgba(212,160,23,.25);}
+.mc-badge.green{background:rgba(74,222,128,.1);color:#4ade80;border-color:rgba(74,222,128,.25);}
+
+/* Filter rows */
+.filter-row-item{background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:13px;padding:14px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;}
+.filter-row-item::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.15),transparent);}
+.filter-row-item.sel{background:rgba(40,30,8,.8);border-color:rgba(212,160,23,.38);}
+.filter-row-item:active{transform:scale(.98);}
+.fri-icon{font-size:20px;flex-shrink:0;}
+.fri-body{flex:1;}
+.fri-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.fri-sub{font-size:11px;color:var(--text-dim);}
+.fri-check{width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.filter-row-item.sel .fri-check{background:var(--gold);border-color:var(--gold);}
+
+/* Tier type cards */
+.tier-type-card{background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:13px;padding:16px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:6px;}
+.tier-type-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.15),transparent);}
+.tier-type-card.sel{background:rgba(40,30,8,.8);border-color:rgba(212,160,23,.38);}
+.tier-type-card:active{transform:scale(.98);}
+.ttc-header{display:flex;align-items:center;justify-content:space-between;}
+.ttc-name{font-size:13px;font-weight:600;color:var(--text);}
+.ttc-count{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--gold-bright);}
+.ttc-sub{font-size:11px;color:var(--text-dim);line-height:1.4;}
+.ttc-check{width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;}
+.tier-type-card.sel .ttc-check{background:var(--gold);border-color:var(--gold);}
+
+/* Style cards */
+.style-card{background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:13px;padding:14px 16px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;}
+.style-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.15),transparent);}
+.style-card.sel{background:rgba(40,30,8,.8);border-color:rgba(212,160,23,.38);}
+.style-card:active{transform:scale(.98);}
+.sc-icon-s{font-size:18px;flex-shrink:0;}
+.sc-body-s{flex:1;}
+.sc-name-s{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.sc-desc-s{font-size:11px;color:var(--text-dim);}
+.sc-check-s{width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.style-card.sel .sc-check-s{background:var(--gold);border-color:var(--gold);}
+
+.pal-enter-btn{background:var(--gold);color:#0e0d0b;border:none;border-radius:14px;padding:15px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;cursor:pointer;width:100%;transition:background .15s,transform .1s;margin-top:auto;flex-shrink:0;}
+.pal-enter-btn:active{transform:scale(.98);background:var(--gold-bright);}
+
+/* ── THE BOUT (session) ── */
+.bout-wrap{position:absolute;inset:0;background:var(--bg);display:none;flex-direction:column;padding:52px 20px 28px;gap:14px;z-index:50;}
+.bout-wrap.open{display:flex;}
+.bout-top{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.bout-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--text-mid);}
+.bout-exit{width:36px;height:36px;background:rgba(255,255,255,.06);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-mid);border:none;}
+.bout-star{width:36px;height:36px;background:rgba(255,255,255,.06);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);transition:color .15s,background .15s;}
+.bout-star.starred{color:var(--gold-bright);background:rgba(212,160,23,.15);}
+.bout-star.starred svg{fill:var(--gold-bright);}
+.bout-prog-wrap{flex-shrink:0;}
+.prog-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:6px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright));border-radius:10px;width:43%;transition:width .4s;}
+.prog-bg{background:rgba(255,255,255,.07);border-radius:10px;height:4px;overflow:hidden;}
+.q-card{background:rgba(28,25,16,.78);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(212,160,23,.2);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5);flex:1;position:relative;overflow:hidden;}
+.q-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.4),transparent);}
+.q-type{font-size:10px;font-weight:600;letter-spacing:.16em;color:var(--gold-dim);text-transform:uppercase;}
+.q-word{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;font-style:italic;color:var(--gold-bright);margin-bottom:4px;}
+.q-text{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--text);line-height:1.45;}
+.blank{display:inline-block;min-width:80px;border-bottom:2px solid var(--gold);background:rgba(212,160,23,.08);border-radius:2px;padding:0 4px;color:transparent;}
+.ans-opts{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+.ans-opt{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:13px 16px;font-size:14px;color:var(--text);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px;}
+.ans-opt:active{background:rgba(212,160,23,.1);border-color:rgba(212,160,23,.3);}
+.ans-opt.correct{background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.4);color:#4ade80;}
+.ans-opt.wrong{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.3);color:#f87171;}
+.opt-l{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text-dim);flex-shrink:0;}
+.feedback-bar{background:rgba(26,77,46,.4);border:1px solid rgba(74,222,128,.25);border-radius:12px;padding:12px 16px;display:none;flex-direction:column;gap:4px;flex-shrink:0;}
+.feedback-bar.show{display:flex;}
+.fb-correct{font-size:12px;font-weight:600;color:#4ade80;}
+.fb-note{font-size:12px;color:var(--text-mid);line-height:1.5;}
+
+/* ── CALLISTRATUM ── */
+.search-bar{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;}
+.search-input{background:none;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;flex:1;}
+.search-input::placeholder{color:var(--text-dim);}
+
+/* ── PHILIPPICS ── */
+.contrib-grid{display:grid;grid-template-columns:repeat(15,1fr);grid-template-rows:repeat(7,16px);gap:4px;}
+.cc{border-radius:3px;background:rgba(255,255,255,.05);}
+.cc.l1{background:rgba(212,160,23,.2);}.cc.l2{background:rgba(212,160,23,.45);}.cc.l3{background:rgba(212,160,23,.7);}.cc.l4{background:var(--gold-bright);}
+.grid-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:10px;color:var(--text-dim);}
+.g-legend{display:flex;align-items:center;gap:4px;}
+.ld{width:9px;height:9px;border-radius:2px;}
+.tbr{margin-bottom:16px;}.tbr:last-child{margin-bottom:0;}
+.tbr-h{display:flex;justify-content:space-between;margin-bottom:5px;}
+.tbr-n{font-size:11px;font-weight:600;letter-spacing:.14em;color:var(--text-mid);text-transform:uppercase;}
+.tbr-p{font-size:11px;font-weight:600;color:var(--gold);}
+.tbr-bg{background:rgba(255,255,255,.07);border-radius:10px;height:6px;overflow:hidden;}
+.tbr-f{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright));border-radius:10px;}
+
+/* Campaign record */
+.campaign-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.camp-card{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden;}
+.camp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.18),transparent);}
+.cc-icon{margin-bottom:10px;display:flex;align-items:center;}
+.cc-num{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;color:var(--text);line-height:1;}
+.cc-label{font-size:9px;font-weight:500;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;margin-top:3px;}
+.cc-sub{font-size:10px;color:var(--text-dim);margin-top:4px;}
+
+/* Tier mastery breakdown */
+.tier-mastery-row{display:flex;gap:8px;}
+.tmr-card{flex:1;background:var(--glass);backdrop-filter:blur(14px);border:1px solid var(--glass-border);border-radius:12px;padding:12px;text-align:center;position:relative;overflow:hidden;}
+.tmr-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.18),transparent);}
+.tmr-badge{display:inline-block;font-size:8px;font-weight:600;letter-spacing:.12em;padding:2px 7px;border-radius:4px;text-transform:uppercase;margin-bottom:8px;}
+.tmr-mastered{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--gold-bright);line-height:1;}
+.tmr-total{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.tmr-bar-bg{background:rgba(255,255,255,.07);border-radius:10px;height:4px;margin-top:8px;overflow:hidden;}
+.tmr-bar-f{height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright));border-radius:10px;}
+
+.sess-hist-item{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;}
+.sess-hist-item::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,160,23,.15),transparent);}
+.shi-mode{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.shi-date{font-size:10px;color:var(--text-dim);}
+.shi-score{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--gold-bright);}
+.shi-meta{font-size:10px;color:var(--text-dim);}
+
+/* ── TAB BAR ── */
+.tab-bar{position:absolute;bottom:0;left:0;right:0;height:var(--tab-h);background:rgba(14,13,11,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(212,160,23,.1);display:flex;align-items:center;justify-content:space-around;padding:0 8px 8px;z-index:100;}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 0;}
+.ti-i{color:var(--text-dim);transition:color .15s;}
+.ti-l{font-size:9px;font-weight:500;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase;transition:color .15s;}
+.tab-item.active .ti-i,.tab-item.active .ti-l{color:var(--gold-bright);}
+.tab-fab{flex:1;display:flex;flex-direction:column;align-items:center;cursor:pointer;margin-top:-22px;}
+.fab-c{width:52px;height:52px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;color:#000;box-shadow:0 4px 20px rgba(212,160,23,.4);transition:transform .15s,background .15s;}
+.tab-fab:active .fab-c{transform:scale(.93);background:var(--gold-bright);}
+.fab-l{font-size:9px;font-weight:600;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-top:3px;}
+.bout-open .tab-bar{display:none;}
+
+/* ── ADD SHEET ── */
+.add-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:300;display:none;align-items:flex-end;}
+.add-backdrop.open{display:flex;}
+.add-sheet{width:100%;background:#161410;border:1px solid rgba(212,160,23,.18);border-top-left-radius:24px;border-top-right-radius:24px;padding:16px 20px 36px;display:flex;flex-direction:column;gap:16px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+.add-backdrop.open .add-sheet{transform:translateY(0);}
+.sheet-handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:0 auto 4px;}
+.add-hdr{display:flex;align-items:center;justify-content:space-between;}
+.add-ttl{font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--text);}
+.add-cls{width:32px;height:32px;background:rgba(255,255,255,.07);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--text-mid);}
+.add-sv{background:var(--gold);color:#000;border:none;border-radius:10px;padding:7px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;}
+.lmi{background:rgba(255,255,255,.04);border:1px solid rgba(212,160,23,.22);border-radius:12px;padding:14px 16px;font-family:'Cormorant Garamond',serif;font-size:24px;font-style:italic;color:var(--text);width:100%;outline:none;transition:border-color .2s;}
+.lmi::placeholder{color:rgba(240,234,216,.22);}
+.lmi:focus{border-color:rgba(212,160,23,.5);}
+.field-lbl{font-size:10px;font-weight:600;letter-spacing:.15em;color:var(--text-dim);text-transform:uppercase;margin-bottom:7px;}
+.src-txt{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);width:100%;outline:none;resize:none;height:58px;line-height:1.5;}
+.src-txt::placeholder{color:var(--text-dim);}
+.reg-row{display:flex;gap:7px;flex-wrap:wrap;}
+.reg-opt{padding:6px 13px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);color:var(--text-mid);cursor:pointer;transition:all .15s;}
+.reg-opt.active{background:rgba(212,160,23,.18);border-color:rgba(212,160,23,.45);color:var(--gold-bright);font-weight:600;}
+.ai-card-add{background:rgba(20,30,20,.65);backdrop-filter:blur(16px);border:1px solid rgba(74,222,128,.18);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.ai-hdr{display:flex;align-items:center;gap:8px;}
+.ai-pulse{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 6px #4ade80;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.ai-lbl{font-size:10px;font-weight:600;letter-spacing:.13em;color:rgba(74,222,128,.7);text-transform:uppercase;}
+.ai-tr{display:flex;gap:7px;}
+.ai-to{flex:1;padding:8px;border-radius:8px;text-align:center;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);color:var(--text-dim);cursor:pointer;transition:all .15s;}
+.ai-to.sel{background:rgba(212,160,23,.18);border-color:rgba(212,160,23,.4);color:var(--gold-bright);}
+.ai-def{font-size:12px;color:var(--text-mid);line-height:1.5;font-style:italic;border-left:2px solid var(--gold-dim);padding-left:10px;}
+.ai-ex{font-size:12px;color:var(--text-dim);line-height:1.5;border-left:2px solid rgba(74,222,128,.3);padding-left:10px;font-style:italic;}
+
+/* ── DETAIL MODAL ── */
+.det-ov{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:400;display:none;align-items:center;justify-content:center;padding:20px;}
+.det-ov.open{display:flex;}
+.det-card{background:#181510;border:1px solid rgba(212,160,23,.2);border-radius:20px;width:100%;max-height:92%;overflow-y:auto;padding:24px;position:relative;scrollbar-width:none;}
+.det-card::-webkit-scrollbar{display:none;}
+.dc-x{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--text-mid);}
+.dc-top{font-size:9px;font-weight:700;letter-spacing:.2em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:8px;}
+.dc-word{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;font-style:italic;color:var(--text);line-height:1.1;margin-bottom:14px;}
+.dc-sec{margin-bottom:16px;}
+.dc-sh{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:600;letter-spacing:.16em;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px;}
+.dc-st{font-size:13px;color:var(--text-mid);line-height:1.6;font-style:italic;}
+.dc-div{border:none;border-top:1px solid rgba(255,255,255,.07);margin:4px 0 16px;}
+.dc-bot{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;}
+.dc-ml{font-size:9px;font-weight:600;letter-spacing:.15em;color:var(--text-dim);text-transform:uppercase;margin-bottom:7px;}
+.dc-mdots{display:flex;gap:5px;}
+.dc-md{width:32px;height:5px;border-radius:3px;background:rgba(212,160,23,.18);}
+.dc-md.f{background:var(--gold);}
+.dc-nl{font-size:9px;font-weight:600;letter-spacing:.15em;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;}
+.dc-nd{font-size:14px;font-weight:600;color:var(--text);}
+.dc-train-btn{background:var(--gold);color:#0e0d0b;border:none;border-radius:12px;padding:13px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;width:100%;transition:background .15s,transform .1s;}
+.dc-train-btn:active{transform:scale(.98);background:var(--gold-bright);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.screen.active>*{animation:fadeUp .28s ease both;}
+.screen.active>*:nth-child(1){animation-delay:.04s}.screen.active>*:nth-child(2){animation-delay:.08s}
+.screen.active>*:nth-child(3){animation-delay:.12s}.screen.active>*:nth-child(4){animation-delay:.16s}
+.screen.active>*:nth-child(5){animation-delay:.20s}.screen.active>*:nth-child(6){animation-delay:.24s}
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+
+<!-- ══════════ ECCLESIA ══════════ -->
+<div class="screen active" id="screen-ecclesia" style="padding-bottom:20px;height:calc(100% - var(--tab-h));gap:12px;">
+  <div class="ecclesia-header">
+    <div><div class="screen-title">Ecclesia</div><div class="screen-sub">The Path of Demosthenes</div></div>
+    <div class="streak-pill">🔥 12</div>
+  </div>
+
+  <div>
+    <div class="lotd-carousel-wrap" id="cw" onmousedown="startDrag(event)" ontouchstart="startDrag(event)" style="touch-action:pan-y;">
+      <div class="lotd-track" id="lt">
+        <div class="lotd-slide">
+          <div class="lotd-type-row"><span class="tier-badge tb-word">Word</span><span class="lotd-day">Today</span></div>
+          <div class="lotd-word">Ephemeral</div>
+          <div style="display:flex;gap:10px;"><span class="lotd-sub">/ɪˈfem.ər.əl/</span><span class="lotd-pos">Adjective</span></div>
+          <div class="lotd-def">"Lasting for a very short time; transitory."</div>
+          <div class="lotd-ex">"The beauty of the sunset was ephemeral, fading into darkness within minutes."</div>
+          <div class="syn-row"><span class="syn-chip">Transient</span><span class="syn-chip">Fleeting</span><span class="syn-chip">Momentary</span></div>
+          <button class="train-btn" onclick="launchSession()">Train this word →</button>
+        </div>
+        <div class="lotd-slide">
+          <div class="lotd-type-row"><span class="tier-badge tb-phrase">Phrase</span><span class="lotd-day">Today</span></div>
+          <div class="lotd-word">Bite the bullet</div>
+          <div class="lotd-pos">Idiom</div>
+          <div class="lotd-def">"To endure a painful or difficult situation that is unavoidable."</div>
+          <div class="lotd-ex">"I had to bite the bullet and rewrite the entire proposal from scratch."</div>
+          <div class="syn-row"><span class="syn-chip">Endure</span><span class="syn-chip">Soldier on</span><span class="syn-chip">Grin and bear it</span></div>
+          <button class="train-btn" onclick="launchSession()">Train this phrase →</button>
+        </div>
+        <div class="lotd-slide">
+          <div class="lotd-type-row"><span class="tier-badge tb-colloc">Collocation</span><span class="lotd-day">Today</span></div>
+          <div class="lotd-word">Deeply flawed</div>
+          <div class="lotd-pos">Adverb + Adjective</div>
+          <div class="lotd-def">"Having serious or fundamental imperfections."</div>
+          <div class="lotd-ex">"The reasoning was deeply flawed, yet nobody dared challenge it."</div>
+          <div class="syn-row"><span class="syn-chip">Profoundly wrong</span><span class="syn-chip">Fundamentally broken</span></div>
+          <button class="train-btn" onclick="launchSession()">Train this collocation →</button>
+        </div>
+      </div>
+    </div>
+    <div class="carousel-dots"><div class="cdot active"></div><div class="cdot"></div><div class="cdot"></div></div>
+  </div>
+
+  <div class="card hero-card" style="padding:16px 18px;">
+    <div class="week-row" style="margin-bottom:0;">
+      <div class="week-day"><div class="wlbl">M</div><div class="wdot done">✓</div></div>
+      <div class="week-day"><div class="wlbl">T</div><div class="wdot done">✓</div></div>
+      <div class="week-day"><div class="wlbl">W</div><div class="wdot done">✓</div></div>
+      <div class="week-day"><div class="wlbl">T</div><div class="wdot done">✓</div></div>
+      <div class="week-day"><div class="wlbl">F</div><div class="wdot today">•</div></div>
+      <div class="week-day"><div class="wlbl">S</div><div class="wdot"></div></div>
+      <div class="week-day"><div class="wlbl">S</div><div class="wdot"></div></div>
+    </div>
+  </div>
+
+  <div class="section-label">Begin a Session</div>
+  <div class="session-cards">
+    <div class="session-card-h primary" onclick="goTo('palaestra')">
+      <div class="sch-icon" style="font-size:0;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div class="sch-body">
+        <div class="sch-name">The Drill</div>
+        <div class="sch-desc">Daily spaced repetition — algorithm decides what's due, including new words and Logoi of the Day</div>
+        <div class="sch-badge">7 due today · 3 new</div>
+      </div>
+      <div class="sch-arrow">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <div class="session-card-h" onclick="goTo('palaestra');setTimeout(()=>selModeAgora(),80)">
+      <div class="sch-icon" style="font-size:0;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="21"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="3 7 12 3 21 7"/><line x1="5" y1="10" x2="5" y2="21"/><line x1="9" y1="10" x2="9" y2="21"/><line x1="15" y1="10" x2="15" y2="21"/><line x1="19" y1="10" x2="19" y2="21"/></svg>
+      </div>
+      <div class="sch-body">
+        <div class="sch-name">The Agora</div>
+        <div class="sch-desc">Free practice on your own terms — filter by starred words, mastery level or register</div>
+        <div class="sch-badge" style="background:rgba(255,255,255,.07);color:var(--text-mid);border:none;">47 logoi available</div>
+      </div>
+      <div class="sch-arrow">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PALAESTRA ══════════ -->
+<div class="screen" id="screen-palaestra" style="padding:0;overflow:hidden;display:none;">
+  <div class="pal-outer">
+    <div class="pal-slider" id="pal-slider">
+
+      <!-- PANEL 0: Mode select -->
+      <div class="pal-panel" id="pp0">
+        <div class="pal-top">
+          <div class="pal-step-title"><div class="screen-title">Palaestra</div><div class="screen-sub">The Wrestling Ground</div></div>
+        </div>
+        <div class="mode-card sel" id="mc-drill" onclick="selMode('drill')">
+          <div class="mc-icon" style="font-size:0;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <div class="mc-body">
+            <div class="mc-name">The Drill</div>
+            <div class="mc-desc">Your daily spaced repetition session. The algorithm decides what's due — new words, forgotten words, and everything in between. Includes today's Logoi of the Day.</div>
+            <div class="mc-badges"><span class="mc-badge">7 due today</span><span class="mc-badge green">3 new</span></div>
+          </div>
+        </div>
+        <div class="mode-card" id="mc-agora" onclick="selMode('agora')">
+          <div class="mc-icon" style="font-size:0;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="21"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="3 7 12 3 21 7"/><line x1="5" y1="10" x2="5" y2="21"/><line x1="9" y1="10" x2="9" y2="21"/><line x1="15" y1="10" x2="15" y2="21"/><line x1="19" y1="10" x2="19" y2="21"/></svg>
+          </div>
+            <div class="mc-name">The Agora</div>
+            <div class="mc-desc">Free practice on your own terms. Filter by starred words, mastery level, or register. You pick the logoi, you set the pace.</div>
+            <div class="mc-badges"><span class="mc-badge">47 logoi available</span></div>
+          </div>
+        </div>
+        <button class="pal-enter-btn" id="p0-btn" onclick="p0Next()">Enter the Palaestra →</button>
+      </div>
+
+      <!-- PANEL 1: Agora filters -->
+      <div class="pal-panel" id="pp1">
+        <div class="pal-top">
+          <div class="pal-back" onclick="palGo(0)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+          <div class="pal-step-title"><div class="screen-title" style="font-size:26px;">The Agora</div><div class="screen-sub">Choose your filter</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="filter-row-item sel" id="fr-starred" onclick="selFilter(this,'starred')">
+            <div class="fri-icon">⭐</div>
+            <div class="fri-body"><div class="fri-name">Starred Words</div><div class="fri-sub">8 logoi starred</div></div>
+            <div class="fri-check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </div>
+          <div class="filter-row-item" id="fr-weak" onclick="selFilter(this,'weak')">
+            <div class="fri-icon">🔴</div>
+            <div class="fri-body"><div class="fri-name">Weakly Known</div><div class="fri-sub">Mastery 1–2 · 12 logoi</div></div>
+            <div class="fri-check"></div>
+          </div>
+          <div class="filter-row-item" id="fr-mild" onclick="selFilter(this,'mild')">
+            <div class="fri-icon">🟡</div>
+            <div class="fri-body"><div class="fri-name">Mildly Known</div><div class="fri-sub">Mastery 3 · 9 logoi</div></div>
+            <div class="fri-check"></div>
+          </div>
+          <div class="filter-row-item" id="fr-strong" onclick="selFilter(this,'strong')">
+            <div class="fri-icon">🟢</div>
+            <div class="fri-body"><div class="fri-name">Strong Knowledge</div><div class="fri-sub">Mastery 4–5 · 18 logoi</div></div>
+            <div class="fri-check"></div>
+          </div>
+          <div class="filter-row-item" id="fr-register" onclick="selFilter(this,'register')">
+            <div class="fri-icon">📋</div>
+            <div class="fri-body"><div class="fri-name">By Register</div><div class="fri-sub">Academic · Literary · Formal…</div></div>
+            <div class="fri-check"></div>
+          </div>
+          <div class="filter-row-item" id="fr-manual" onclick="selFilter(this,'manual')">
+            <div class="fri-icon">✋</div>
+            <div class="fri-body"><div class="fri-name">Select Manually</div><div class="fri-sub">Pick individual logoi from your library</div></div>
+            <div class="fri-check"></div>
+          </div>
+        </div>
+        <!-- Register sub -->
+        <div id="reg-sub" style="display:none;flex-direction:column;gap:8px;">
+          <div class="section-label">Register</div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;">
+            <div class="f-chip active" onclick="fChip(this)">Academic</div>
+            <div class="f-chip" onclick="fChip(this)">Literary</div>
+            <div class="f-chip" onclick="fChip(this)">Formal</div>
+            <div class="f-chip" onclick="fChip(this)">Informal</div>
+            <div class="f-chip" onclick="fChip(this)">Idiomatic</div>
+          </div>
+        </div>
+        <button class="pal-enter-btn" onclick="palGo(2)">Next →</button>
+      </div>
+
+      <!-- PANEL 2: Logos type -->
+      <div class="pal-panel" id="pp2">
+        <div class="pal-top">
+          <div class="pal-back" onclick="palGo(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+          <div class="pal-step-title"><div class="screen-title" style="font-size:26px;">Logos Type</div><div class="screen-sub">What will you wrestle with?</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="tier-type-card sel" id="tt-all" onclick="selTier(this,'all')">
+            <div class="ttc-header">
+              <div>
+                <div class="ttc-name">All Logoi</div>
+                <div class="ttc-sub">Words, phrases and collocations mixed</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="ttc-count">8</div>
+                <div class="ttc-check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+              </div>
+            </div>
+          </div>
+          <div class="tier-type-card" id="tt-word" onclick="selTier(this,'word')">
+            <div class="ttc-header">
+              <div>
+                <span class="tier-badge tb-word" style="margin-bottom:6px;display:inline-block;">Word</span>
+                <div class="ttc-name">Words only</div>
+                <div class="ttc-sub">Single lexical items · synonym, fill-in-blank, usage</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="ttc-count" style="color:var(--gold);">5</div>
+                <div class="ttc-check"></div>
+              </div>
+            </div>
+          </div>
+          <div class="tier-type-card" id="tt-phrase" onclick="selTier(this,'phrase')">
+            <div class="ttc-header">
+              <div>
+                <span class="tier-badge tb-phrase" style="margin-bottom:6px;display:inline-block;">Phrase</span>
+                <div class="ttc-name">Phrases & Idioms</div>
+                <div class="ttc-sub">Meaning is the whole unit · register & context</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="ttc-count" style="color:#5ec4c4;">2</div>
+                <div class="ttc-check"></div>
+              </div>
+            </div>
+          </div>
+          <div class="tier-type-card" id="tt-colloc" onclick="selTier(this,'colloc')">
+            <div class="ttc-header">
+              <div>
+                <span class="tier-badge tb-colloc" style="margin-bottom:6px;display:inline-block;">Collocation</span>
+                <div class="ttc-name">Collocations</div>
+                <div class="ttc-sub">Word pairs that travel together · which word fits?</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="ttc-count" style="color:#c4a5e8;">1</div>
+                <div class="ttc-check"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="pal-enter-btn" onclick="palGo(3)">Next →</button>
+      </div>
+
+      <!-- PANEL 3: Training style -->
+      <div class="pal-panel" id="pp3">
+        <div class="pal-top">
+          <div class="pal-back" onclick="palGo(2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+          <div class="pal-step-title"><div class="screen-title" style="font-size:26px;">Training Style</div><div class="screen-sub">How will you wrestle?</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="style-card sel" onclick="selStyle(this)">
+            <div class="sc-icon-s">⚡</div>
+            <div class="sc-body-s"><div class="sc-name-s">Mixed</div><div class="sc-desc-s">Algorithm adapts the style to each word's mastery level</div></div>
+            <div class="sc-check-s"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </div>
+          <div class="style-card" onclick="selStyle(this)">
+            <div class="sc-icon-s">🔲</div>
+            <div class="sc-body-s"><div class="sc-name-s">Fill in the Blank</div><div class="sc-desc-s">Complete the sentence with the missing word or phrase</div></div>
+            <div class="sc-check-s"></div>
+          </div>
+          <div class="style-card" onclick="selStyle(this)">
+            <div class="sc-icon-s">≈</div>
+            <div class="sc-body-s"><div class="sc-name-s">Find the Synonym</div><div class="sc-desc-s">Match words by meaning, register and semantic weight</div></div>
+            <div class="sc-check-s"></div>
+          </div>
+          <div class="style-card" onclick="selStyle(this)">
+            <div class="sc-icon-s">✓</div>
+            <div class="sc-body-s"><div class="sc-name-s">Correct Usage</div><div class="sc-desc-s">Identify which sentence deploys the word correctly</div></div>
+            <div class="sc-check-s"></div>
+          </div>
+          <div class="style-card" onclick="selStyle(this)">
+            <div class="sc-icon-s">✍</div>
+            <div class="sc-body-s"><div class="sc-name-s">Write a Sentence</div><div class="sc-desc-s">Produce your own sentence — AI evaluates naturalness</div></div>
+            <div class="sc-check-s"></div>
+          </div>
+        </div>
+        <button class="pal-enter-btn" onclick="startBout()">Enter the Palaestra →</button>
+      </div>
+
+    </div><!-- /pal-slider -->
+
+    <!-- THE BOUT -->
+    <div class="bout-wrap" id="bout-wrap">
+      <div class="bout-top">
+        <div class="bout-exit" onclick="exitBout()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+        <div class="bout-title" id="bout-title">The Drill</div>
+        <button class="bout-star" id="bout-star" onclick="toggleBoutStar()">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </button>
+      </div>
+      <div class="bout-prog-wrap">
+        <div class="prog-meta"><span>3 of 7 logoi</span><span style="color:var(--gold);">Fill in the blank</span></div>
+        <div class="prog-bg"><div class="prog-fill"></div></div>
+      </div>
+      <div class="q-card">
+        <div class="q-type">Fill in the Blank</div>
+        <div class="q-word">Ephemeral</div>
+        <div class="q-text">The beauty of cherry blossoms is <span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> — they last only a week before falling.</div>
+      </div>
+      <div class="ans-opts">
+        <div class="ans-opt" onclick="pick(this,false)"><div class="opt-l">A</div>Persistent</div>
+        <div class="ans-opt" onclick="pick(this,true)"><div class="opt-l">B</div>Ephemeral</div>
+        <div class="ans-opt" onclick="pick(this,false)"><div class="opt-l">C</div>Mundane</div>
+        <div class="ans-opt" onclick="pick(this,false)"><div class="opt-l">D</div>Tenacious</div>
+      </div>
+      <div class="feedback-bar" id="fb">
+        <div class="fb-correct">✓ Correct — Ephemeral</div>
+        <div class="fb-note">"The ephemeral quality of the blossoms is precisely what makes them precious in Japanese culture."</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ CALLISTRATUM ══════════ -->
+<div class="screen" id="screen-callistratum">
+  <div><div class="screen-title">Callistratum</div><div class="screen-sub">The Great Library</div></div>
+  <div class="search-bar"><span style="color:var(--text-dim);font-size:15px;">⌕</span><input class="search-input" placeholder="Search your logoi…"/></div>
+  <div style="display:flex;gap:8px;">
+    <div class="f-chip active" onclick="fChip(this)">All</div>
+    <div class="f-chip" onclick="fChip(this)">Word</div>
+    <div class="f-chip" onclick="fChip(this)">Phrase</div>
+    <div class="f-chip" onclick="fChip(this)">Collocation</div>
+  </div>
+  <div class="logos-list">
+    <div class="logos-item mf" onclick="openDet('ephemeral')">
+      <div style="flex:1;"><div class="li-name">Ephemeral <span class="tier-badge tb-word" style="font-size:8px;">Word</span></div><div style="display:flex;align-items:center;gap:8px;"><span class="reg-lbl">Literary</span><div class="mdots"><div class="mdot f"></div><div class="mdot f"></div><div class="mdot f"></div><div class="mdot"></div><div class="mdot"></div></div></div></div>
+      <button class="star-btn starred" onclick="event.stopPropagation();this.classList.toggle('starred')">★</button>
+      <div class="chevron">›</div>
+    </div>
+    <div class="logos-item ml" onclick="openDet('bite')">
+      <div style="flex:1;"><div class="li-name">Bite the bullet <span class="tier-badge tb-phrase" style="font-size:8px;">Phrase</span></div><div style="display:flex;align-items:center;gap:8px;"><span class="reg-lbl">Idiomatic</span><div class="mdots"><div class="mdot f"></div><div class="mdot"></div><div class="mdot"></div><div class="mdot"></div><div class="mdot"></div></div></div></div>
+      <button class="star-btn" onclick="event.stopPropagation();this.classList.toggle('starred')">★</button>
+      <div class="chevron">›</div>
+    </div>
+    <div class="logos-item mm" onclick="openDet('deeply')">
+      <div style="flex:1;"><div class="li-name">Deeply flawed <span class="tier-badge tb-colloc" style="font-size:8px;">Collocation</span></div><div style="display:flex;align-items:center;gap:8px;"><span class="reg-lbl">Academic</span><div class="mdots"><div class="mdot f"></div><div class="mdot f"></div><div class="mdot f"></div><div class="mdot f"></div><div class="mdot"></div></div></div></div>
+      <button class="star-btn starred" onclick="event.stopPropagation();this.classList.toggle('starred')">★</button>
+      <div class="chevron">›</div>
+    </div>
+    <div class="logos-item" onclick="openDet('tendentious')">
+      <div style="flex:1;"><div class="li-name">Tendentious <span class="tier-badge tb-word" style="font-size:8px;">Word</span></div><div style="display:flex;align-items:center;gap:8px;"><span class="reg-lbl">Formal</span><div class="mdots"><div class="mdot"></div><div class="mdot"></div><div class="mdot"></div><div class="mdot"></div><div class="mdot"></div></div></div></div>
+      <button class="star-btn" onclick="event.stopPropagation();this.classList.toggle('starred')">★</button>
+      <div class="chevron">›</div>
+    </div>
+    <div class="logos-item mfg">
+      <div style="flex:1;"><div class="li-name">In medias res <span class="tier-badge tb-phrase" style="font-size:8px;">Phrase</span></div><div style="display:flex;align-items:center;gap:8px;"><span class="reg-lbl">Literary</span><div class="mdots"><div class="mdot f"></div><div class="mdot f"></div><div class="mdot"></div><div class="mdot"></div><div class="mdot"></div></div></div></div>
+      <button class="star-btn" onclick="event.stopPropagation();this.classList.toggle('starred')">★</button>
+      <div class="chevron">›</div>
+    </div>
+    <div class="logos-item">
+      <div style="flex:1;"><div class="li-name">Laconic <span class="tier-badge tb-word" style="font-size:8px;">Word</span></div><div style="display:flex;align-items:center;gap:8px;"><span class="reg-lbl">Literary</span><div class="mdots"><div class="mdot f"></div><div class="mdot f"></div><div class="mdot"></div><div class="mdot"></div><div class="mdot"></div></div></div></div>
+      <button class="star-btn starred" onclick="event.stopPropagation();this.classList.toggle('starred')">★</button>
+      <div class="chevron">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PHILIPPICS ══════════ -->
+<div class="screen" id="screen-philippics" style="gap:12px;">
+  <div><div class="screen-title">Philippics</div><div class="screen-sub">Mastery & Progress</div></div>
+
+  <div class="phil-section-hdr">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold-dim);flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>Training History</span>
+  </div>
+  <div class="card" style="padding:14px;">
+    <div class="contrib-grid" id="cg"></div>
+    <div class="grid-meta"><span>Last 15 weeks</span><div class="g-legend"><span>Less</span><div class="ld" style="background:rgba(255,255,255,.07);"></div><div class="ld" style="background:rgba(212,160,23,.2);"></div><div class="ld" style="background:rgba(212,160,23,.5);"></div><div class="ld" style="background:var(--gold-bright);"></div><span>More</span></div></div>
+  </div>
+
+  <div class="phil-section-hdr">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold-dim);flex-shrink:0;"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+    <span>Tier Mastery</span>
+  </div>
+  <div class="card" style="padding:16px 14px;">
+    <div class="tbr">
+      <div class="tbr-h">
+        <span class="tbr-n">WORDS</span>
+        <span class="tbr-p">20%</span>
+      </div>
+      <div class="tbr-bg"><div class="tbr-f" style="width:20%;"></div></div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">4 of 20 mastered</div>
+    </div>
+    <div class="tbr">
+      <div class="tbr-h">
+        <span class="tbr-n">PHRASES</span>
+        <span class="tbr-p">40%</span>
+      </div>
+      <div class="tbr-bg"><div class="tbr-f" style="width:40%;"></div></div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">5 of 14 mastered</div>
+    </div>
+    <div class="tbr">
+      <div class="tbr-h">
+        <span class="tbr-n">COLLOCATIONS</span>
+        <span class="tbr-p">33%</span>
+      </div>
+      <div class="tbr-bg"><div class="tbr-f" style="width:33%;"></div></div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">3 of 13 mastered</div>
+    </div>
+  </div>
+
+  <div class="phil-section-hdr">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold-dim);flex-shrink:0;"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+    <span>Campaign Record</span>
+  </div>
+  <div class="campaign-grid">
+    <div class="camp-card">
+      <div class="cc-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:#e07c3a;"><path d="M12 2c0 6-6 8-6 14a6 6 0 0012 0c0-6-6-8-6-14z"/><path d="M12 12c0 3-2 4-2 6a2 2 0 004 0c0-2-2-3-2-6z"/></svg>
+      </div>
+      <div class="cc-num">12</div>
+      <div class="cc-label">Day Streak</div>
+    </div>
+    <div class="camp-card">
+      <div class="cc-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:#c9a227;"><path d="M6 9H4a2 2 0 000 4h2"/><path d="M18 9h2a2 2 0 010 4h-2"/><path d="M6 9v6"/><path d="M18 9v6"/><path d="M6 9a6 6 0 0012 0"/><path d="M6 15a6 6 0 0012 0"/><path d="M9 21h6"/><path d="M12 15v6"/></svg>
+      </div>
+      <div class="cc-num">12</div>
+      <div class="cc-label">Mastered Total</div>
+      <div class="cc-sub" style="margin-top:5px;">
+        <span style="color:var(--gold);font-size:10px;">4W</span><span style="color:var(--text-dim);font-size:10px;"> · </span><span style="color:#5ec4c4;font-size:10px;">5P</span><span style="color:var(--text-dim);font-size:10px;"> · </span><span style="color:#c4a5e8;font-size:10px;">3C</span>
+      </div>
+    </div>
+    <div class="camp-card">
+      <div class="cc-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:#c9a227;"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+      </div>
+      <div class="cc-num" style="color:var(--gold-bright);">+9</div>
+      <div class="cc-label">New This Week</div>
+      <div class="cc-sub" style="margin-top:5px;">
+        <span style="color:var(--gold);font-size:10px;">3W</span><span style="color:var(--text-dim);font-size:10px;"> · </span><span style="color:#5ec4c4;font-size:10px;">4P</span><span style="color:var(--text-dim);font-size:10px;"> · </span><span style="color:#c4a5e8;font-size:10px;">2C</span>
+      </div>
+    </div>
+    <div class="camp-card">
+      <div class="cc-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:#f87171;"><circle cx="12" cy="8" r="5"/><path d="M8 8c0 0 0 2 2 3s2 3 2 3"/><path d="M16 8c0 0 0 2-2 3s-2 3-2 3"/><rect x="9" y="17" width="6" height="4" rx="1"/><line x1="9" y1="19" x2="15" y2="19"/></svg>
+      </div>
+      <div class="cc-num" style="color:#f87171;">3</div>
+      <div class="cc-label">Forgotten</div>
+      <div class="cc-sub" style="margin-top:5px;">
+        <span style="color:var(--gold);font-size:10px;">1W</span><span style="color:var(--text-dim);font-size:10px;"> · </span><span style="color:#5ec4c4;font-size:10px;">1P</span><span style="color:var(--text-dim);font-size:10px;"> · </span><span style="color:#c4a5e8;font-size:10px;">1C</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="phil-section-hdr">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gold-dim);flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span>Session History</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:12px;">
+    <div class="sess-hist-item"><div><div class="shi-mode">🪨 The Drill</div><div class="shi-date">Today · 8 min</div></div><div style="text-align:right;"><div class="shi-score">85%</div><div class="shi-meta">7 reviewed</div></div></div>
+    <div class="sess-hist-item"><div><div class="shi-mode">🏛 The Agora · Starred</div><div class="shi-date">Yesterday · 12 min</div></div><div style="text-align:right;"><div class="shi-score">72%</div><div class="shi-meta">8 reviewed</div></div></div>
+    <div class="sess-hist-item"><div><div class="shi-mode">🪨 The Drill</div><div class="shi-date">Mar 5 · 6 min</div></div><div style="text-align:right;"><div class="shi-score">91%</div><div class="shi-meta">5 reviewed</div></div></div>
+    <div class="sess-hist-item"><div><div class="shi-mode">🏛 The Agora · Weakly Known</div><div class="shi-date">Mar 4 · 15 min</div></div><div style="text-align:right;"><div class="shi-score">60%</div><div class="shi-meta">12 reviewed</div></div></div>
+    <div class="sess-hist-item"><div><div class="shi-mode">🪨 The Drill</div><div class="shi-date">Mar 3 · 9 min</div></div><div style="text-align:right;"><div class="shi-score">88%</div><div class="shi-meta">9 reviewed</div></div></div>
+  </div>
+</div>
+
+<!-- ══════════ TAB BAR ══════════ -->
+<div class="tab-bar" id="tab-bar">
+  <div class="tab-item active" id="tab-ecclesia" onclick="goTo('ecclesia')">
+    <svg class="ti-i" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
+    <div class="ti-l">Ecclesia</div>
+  </div>
+  <div class="tab-item" id="tab-palaestra" onclick="goTo('palaestra')">
+    <svg class="ti-i" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/></svg>
+    <div class="ti-l">Palaestra</div>
+  </div>
+  <div class="tab-fab" onclick="openAdd()"><div class="fab-c">+</div><div class="fab-l">Add</div></div>
+  <div class="tab-item" id="tab-callistratum" onclick="goTo('callistratum')">
+    <svg class="ti-i" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
+    <div class="ti-l">Callistratum</div>
+  </div>
+  <div class="tab-item" id="tab-philippics" onclick="goTo('philippics')">
+    <svg class="ti-i" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <div class="ti-l">Philippics</div>
+  </div>
+</div>
+
+<!-- ══════════ ADD SHEET ══════════ -->
+<div class="add-backdrop" id="ab" onclick="closeAddOut(event)">
+  <div class="add-sheet">
+    <div class="sheet-handle"></div>
+    <div class="add-hdr">
+      <div class="add-cls" onclick="closeAdd()">✕</div>
+      <div class="add-ttl">New Logos</div>
+      <button class="add-sv">Save</button>
+    </div>
+    <input class="lmi" placeholder="Enter logos…"/>
+    <div><div class="field-lbl">Source Context (Optional)</div><textarea class="src-txt" placeholder="Where did you encounter this?"></textarea></div>
+    <div class="ai-card-add">
+      <div class="ai-hdr"><div class="ai-pulse"></div><div class="ai-lbl">AI Classification</div></div>
+      <div class="ai-tr">
+        <div class="ai-to sel" onclick="aiT(this)">Word</div>
+        <div class="ai-to" onclick="aiT(this)">Phrase</div>
+        <div class="ai-to" onclick="aiT(this)">Collocation</div>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;">
+        <div class="reg-opt active" onclick="regT(this)">Formal</div>
+        <div class="reg-opt" onclick="regT(this)">Academic</div>
+        <div class="reg-opt" onclick="regT(this)">Literary</div>
+        <div class="reg-opt" onclick="regT(this)">Informal</div>
+        <div class="reg-opt" onclick="regT(this)">Idiomatic</div>
+      </div>
+      <div class="ai-def">"Expressing or promoting a particular cause or point of view; having an underlying purpose."</div>
+      <div class="ai-ex">"The report was tendentious, framing every statistic to support a predetermined conclusion."</div>
+      <div class="syn-row"><span class="syn-chip">Biased</span><span class="syn-chip">Partisan</span><span class="syn-chip">Slanted</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ DETAIL MODAL ══════════ -->
+<div class="det-ov" id="do" onclick="closeDOut(event)">
+  <div class="det-card">
+    <div class="dc-x" onclick="closeDet()">✕</div>
+    <div id="dc"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const DD={
+  ephemeral:{word:'Ephemeral',tier:'word',tc:'tb-word',reg:'Literary',def:'Lasting for a very short time; transitory.',ex:'The beauty of the sunset was ephemeral, fading into darkness within minutes.',src:'Found in: Sontag, On Photography, p. 14',split:null,syns:['Transient','Fleeting','Momentary'],m:3,next:'Mar 7, 2026'},
+  bite:{word:'Bite the bullet',tier:'phrase',tc:'tb-phrase',reg:'Idiomatic',def:'To endure a painful or difficult situation that is unavoidable.',ex:'I had to bite the bullet and apologise even though I felt wronged.',src:'Heard in conversation',split:null,syns:['Soldier on','Endure','Grin and bear it'],m:1,next:'Mar 9, 2026'},
+  deeply:{word:'Deeply flawed',tier:'collocation',tc:'tb-colloc',reg:'Academic',def:'Having serious or fundamental imperfections.',ex:'The methodology of the study was deeply flawed, undermining its conclusions.',src:'The Economist, Jan 2024',split:'[deeply] + [flawed] — adverb + adjective',syns:['Profoundly wrong','Fundamentally broken'],m:4,next:'Mar 12, 2026'},
+  tendentious:{word:'Tendentious',tier:'word',tc:'tb-word',reg:'Formal',def:'Expressing or promoting a particular cause or point of view; having an underlying purpose not immediately obvious.',ex:'The report was tendentious, framing every statistic to support a predetermined conclusion.',src:null,split:null,syns:['Biased','Partisan','Slanted'],m:0,next:'Today'}
+};
+
+let currentMode='drill';
+
+function goTo(s){
+  document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(e=>e.classList.remove('active'));
+  const sc=document.getElementById('screen-'+s);
+  sc.classList.add('active');
+  sc.style.display='flex';
+  const t=document.getElementById('tab-'+s); if(t) t.classList.add('active');
+  document.getElementById('app').classList.remove('bout-open');
+  if(s==='palaestra') palReset();
+}
+
+// ── PALAESTRA ──
+let palStep=0;
+function palReset(){
+  palStep=0;
+  document.getElementById('pal-slider').style.transform='translateX(0)';
+  document.getElementById('bout-wrap').classList.remove('open');
+  document.getElementById('app').classList.remove('bout-open');
+  selMode('drill');
+}
+function palGo(step){
+  palStep=step;
+  const w=document.getElementById('pal-slider').parentElement.parentElement;
+  const pw=w.offsetWidth||390;
+  document.getElementById('pal-slider').style.transform=`translateX(-${step*20}%)`;
+}
+function selMode(m){
+  currentMode=m;
+  document.getElementById('mc-drill').classList.toggle('sel',m==='drill');
+  document.getElementById('mc-agora').classList.toggle('sel',m==='agora');
+  document.getElementById('p0-btn').textContent = m==='drill' ? 'Enter the Palaestra →' : 'Choose Your Logoi →';
+}
+function selModeAgora(){ selMode('agora'); }
+function p0Next(){
+  if(currentMode==='drill') startBout();
+  else palGo(1);
+}
+function selFilter(el,type){
+  document.querySelectorAll('.filter-row-item').forEach(c=>{
+    c.classList.remove('sel');
+    c.querySelector('.fri-check').innerHTML='';
+  });
+  el.classList.add('sel');
+  el.querySelector('.fri-check').innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  document.getElementById('reg-sub').style.display = type==='register' ? 'flex' : 'none';
+}
+function selTier(el,t){
+  document.querySelectorAll('.tier-type-card').forEach(c=>{
+    c.classList.remove('sel');
+    c.querySelector('.ttc-check').innerHTML='';
+  });
+  el.classList.add('sel');
+  el.querySelector('.ttc-check').innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+}
+function selStyle(el){
+  document.querySelectorAll('.style-card').forEach(c=>{
+    c.classList.remove('sel');
+    c.querySelector('.sc-check-s').innerHTML='';
+  });
+  el.classList.add('sel');
+  el.querySelector('.sc-check-s').innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+}
+function startBout(){
+  document.getElementById('bout-title').textContent = currentMode==='drill' ? '🪨 The Drill' : '🏛 The Agora';
+  document.getElementById('bout-wrap').classList.add('open');
+  document.getElementById('app').classList.add('bout-open');
+}
+function toggleBoutStar(){
+  const btn=document.getElementById('bout-star');
+  btn.classList.toggle('starred');
+}
+function exitBout(){
+  document.getElementById('bout-wrap').classList.remove('open');
+  document.getElementById('app').classList.remove('bout-open');
+  palReset();
+}
+function launchSession(){ goTo('palaestra'); setTimeout(()=>startBout(),80); }
+function pick(el,c){
+  document.querySelectorAll('.ans-opt').forEach(o=>o.onclick=null);
+  el.classList.add(c?'correct':'wrong');
+  if(c) document.getElementById('fb').classList.add('show');
+}
+
+// ── ADD ──
+function openAdd(){document.getElementById('ab').classList.add('open');}
+function closeAdd(){document.getElementById('ab').classList.remove('open');}
+function closeAddOut(e){if(e.target===document.getElementById('ab'))closeAdd();}
+function regT(el){el.closest('div').querySelectorAll('.reg-opt').forEach(o=>o.classList.remove('active'));el.classList.add('active');}
+function aiT(el){el.closest('.ai-tr').querySelectorAll('.ai-to').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');}
+function fChip(el){el.closest('div').querySelectorAll('.f-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');}
+
+// ── DETAIL ──
+function openDet(k){
+  const d=DD[k]; if(!d) return;
+  const tl=d.tier.charAt(0).toUpperCase()+d.tier.slice(1);
+  const dots=Array.from({length:5},(_,i)=>`<div class="dc-md ${i<d.m?'f':''}"></div>`).join('');
+  const synLabel=d.tier==='collocation'?'Alternative Collocates':d.tier==='phrase'?'Equivalent Phrases':'Synonyms';
+  const synHtml=d.syns?`<div class="dc-sec"><div class="dc-sh"><span>≈</span> ${synLabel}</div><div class="syn-row">${d.syns.map(s=>`<span class="syn-chip">${s}</span>`).join('')}</div></div>`:'';
+  document.getElementById('dc').innerHTML=`
+    <div class="dc-top">Logos Detail</div>
+    <div class="dc-word">${d.word}</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;"><span class="tier-badge ${d.tc}">${tl}</span><span class="reg-lbl" style="display:flex;align-items:center;">${d.reg}</span></div>
+    <div class="dc-sec"><div class="dc-sh"><span>📖</span> Definition</div><div class="dc-st">"${d.def}"</div></div>
+    <div class="dc-sec"><div class="dc-sh"><span>↗</span> Example Usage</div><div class="dc-st">${d.ex}</div></div>
+    ${synHtml}
+    ${d.src?`<div class="dc-sec"><div class="dc-sh"><span>📍</span> Source</div><div class="dc-st">${d.src}</div></div>`:''}
+    ${d.split?`<div class="dc-sec"><div class="dc-sh"><span>⚙</span> Structure</div><div class="dc-st">${d.split}</div></div>`:''}
+    <hr class="dc-div">
+    <div class="dc-bot">
+      <div><div class="dc-ml">Mastery Level</div><div class="dc-mdots">${dots}</div></div>
+      <div style="text-align:right;"><div class="dc-nl">Next Review</div><div class="dc-nd">${d.next}</div></div>
+    </div>
+    <button class="dc-train-btn" onclick="closeDet();launchSession()">Train this Logos →</button>`;
+  document.getElementById('do').classList.add('open');
+}
+function closeDet(){document.getElementById('do').classList.remove('open');}
+function closeDOut(e){if(e.target===document.getElementById('do'))closeDet();}
+
+// ── CAROUSEL ──
+let ci=0,ds=null,dx=0;
+function setC(i){ci=Math.max(0,Math.min(2,i));document.getElementById('lt').style.transform=`translateX(-${ci*100}%)`;document.querySelectorAll('.cdot').forEach((d,j)=>d.classList.toggle('active',j===ci));}
+function startDrag(e){ds=e.touches?e.touches[0].clientX:e.clientX;dx=0;const w=document.getElementById('cw');const mv=ev=>{dx=(ev.touches?ev.touches[0].clientX:ev.clientX)-ds;};const en=()=>{if(dx<-40)setC(ci+1);else if(dx>40)setC(ci-1);w.removeEventListener('mousemove',mv);w.removeEventListener('mouseup',en);w.removeEventListener('touchmove',mv);w.removeEventListener('touchend',en);};w.addEventListener('mousemove',mv);w.addEventListener('mouseup',en);w.addEventListener('touchmove',mv,{passive:true});w.addEventListener('touchend',en);}
+
+// ── CONTRIB GRID ──
+(function(){const g=document.getElementById('cg');const lv=[0,0,1,1,2,2,3,4,0,1,2,1,0,3,2];for(let r=0;r<7;r++)for(let c=0;c<15;c++){const el=document.createElement('div');el.className='cc';const b=lv[c],rd=Math.random();if(b>=4)el.classList.add(rd>.3?'l4':'l3');else if(b>=3)el.classList.add(rd>.4?'l3':'l2');else if(b>=2)el.classList.add(rd>.5?'l2':'l1');else if(b>=1&&rd>.5)el.classList.add('l1');g.appendChild(el);}})();
+</script>
+</body>
+</html>
