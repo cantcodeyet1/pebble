@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePebbleStore } from '../store';
 import { DrillIcon, AgoraIcon } from './Palaestra';
+import { addLogos as dbAddLogos } from '../db/logoi';
 
 const slides = [
   {
@@ -10,6 +11,7 @@ const slides = [
     word: 'Ephemeral',
     ipa: '/ɪˈfem.ər.əl/',
     pos: 'Adjective',
+    register: 'literary',
     def: '"Lasting for a very short time; transitory."',
     ex: '"The beauty of the sunset was ephemeral, fading into darkness within minutes."',
     syns: ['Transient', 'Fleeting', 'Momentary'],
@@ -19,7 +21,9 @@ const slides = [
     tier: 'Phrase' as const,
     tc: 'tb-phrase',
     word: 'Bite the bullet',
-    pos: 'Idiom',
+    ipa: '',
+    pos: 'Idiomatic Expression',
+    register: 'informal',
     def: '"To endure a painful or difficult situation that is unavoidable."',
     ex: '"I had to bite the bullet and rewrite the entire proposal from scratch."',
     syns: ['Endure', 'Soldier on', 'Grin and bear it'],
@@ -38,9 +42,31 @@ const weekDays = [
 ];
 
 export const Ecclesia = () => {
-  const { streak, logoi } = usePebbleStore();
+  const { streak, logoi, appendLogos } = usePebbleStore();
   const navigate = useNavigate();
   const [slide, setSlide] = useState(0);
+  const isSaved = (i: number) =>
+    logoi.some(l => l.text.toLowerCase() === slides[i].word.toLowerCase());
+
+  const saveSlide = async (i: number) => {
+    if (isSaved(i)) return;
+    const s = slides[i];
+    try {
+      const result = await dbAddLogos({
+        entry: s.word,
+        tier: s.tier.toLowerCase(),
+        definition: s.def.replace(/^"|"$/g, ''),
+        example: s.ex.replace(/^"|"$/g, ''),
+        register: s.register,
+        phonetic: s.ipa,
+        pos: s.pos,
+        synonyms: s.syns,
+      });
+      appendLogos(result);
+    } catch {
+      // DB unavailable — silently ignore
+    }
+  };
   const dragStartRef = useRef<number | null>(null);
   const dragDeltaRef = useRef(0);
 
@@ -93,6 +119,11 @@ export const Ecclesia = () => {
                 <div className="lotd-type-row">
                   <span className={`tier-badge ${s.tc}`}>{s.tier}</span>
                   <span className="lotd-day">Today</span>
+                  <button className="lotd-save-btn" onClick={() => { void saveSlide(i); }} title="Save to Callistratum">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill={isSaved(i) ? 'var(--gold)' : 'none'} stroke="var(--gold)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
+                    </svg>
+                  </button>
                 </div>
                 <div className="lotd-word">{s.word}</div>
                 <div style={{ display: 'flex', gap: 10 }}>

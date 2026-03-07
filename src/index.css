@@ -272,6 +272,8 @@ body::before {
 }
 .lotd-type-row { display: flex; align-items: center; gap: 8px; }
 .lotd-day { font-size: 10px; font-weight: 600; letter-spacing: .16em; color: var(--text-dim); text-transform: uppercase; margin-left: auto; }
+.lotd-save-btn { background: none; border: none; padding: 2px 0 0; cursor: pointer; display: flex; align-items: center; opacity: .7; transition: opacity .2s; }
+.lotd-save-btn:hover { opacity: 1; }
 .lotd-word { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 600; font-style: italic; color: var(--text); line-height: 1.1; }
 .lotd-sub  { font-size: 11px; color: var(--text-dim); font-style: italic; }
 .lotd-pos  { font-size: 11px; font-weight: 500; color: var(--gold-dim); text-transform: uppercase; letter-spacing: .1em; }
