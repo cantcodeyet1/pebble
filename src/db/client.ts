@@ -1,29 +1,12 @@
 import { createClient } from '@libsql/client'
-import { drizzle } from 'drizzle-orm/libsql'
 
-const isNative = (
-  (!!(window as any).Capacitor?.isNativePlatform?.()) ||
-  window.location.protocol === 'capacitor:' ||
-  window.location.protocol === 'ionic:'
-)
-
-const client = createClient(
-  isNative
-    ? {
-        url: 'file:pebble.db',
-        syncUrl: import.meta.env.VITE_TURSO_DATABASE_URL as string,
-        authToken: import.meta.env.VITE_TURSO_AUTH_TOKEN as string
-      }
-    : {
-        url: import.meta.env.VITE_TURSO_DATABASE_URL,
-        authToken: import.meta.env.VITE_TURSO_AUTH_TOKEN
-      }
-)
+const client = createClient({
+  url: import.meta.env.VITE_TURSO_DATABASE_URL,
+  authToken: import.meta.env.VITE_TURSO_AUTH_TOKEN
+})
 
 export async function initDb(): Promise<void> {
-  if (isNative) {
-    await client.sync()
-  }
+  // no-op for now — offline sync to be added later
 }
 
 export function getConn() {

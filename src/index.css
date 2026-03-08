@@ -260,7 +260,7 @@ body::before {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   gap: 10px;

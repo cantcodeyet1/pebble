@@ -109,7 +109,7 @@ export const Ecclesia = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: 18, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
       {/* Header */}
       <div className="ecclesia-header" style={{ flexShrink: 0 }}>
@@ -120,8 +120,8 @@ export const Ecclesia = () => {
         <div className="streak-pill">🔥 {streak}</div>
       </div>
 
-      {/* Carousel — grows to fill remaining vertical space */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      {/* Carousel */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div
           className="lotd-carousel-wrap"
           onMouseDown={e => onDragStart(e.clientX)}
@@ -130,9 +130,9 @@ export const Ecclesia = () => {
           onTouchStart={e => onDragStart(e.touches[0].clientX)}
           onTouchMove={e => onDragMove(e.touches[0].clientX)}
           onTouchEnd={onDragEnd}
-          style={{ flex: 1, minHeight: 0, touchAction: 'pan-y' }}
+          style={{ touchAction: 'pan-y' }}
         >
-          <div className="lotd-track" style={{ transform: `translateX(-${slide * 100}%)`, height: '100%' }}>
+          <div className="lotd-track" style={{ transform: `translateX(-${slide * 100}%)` }}>
             {slides.map((s, i) => (
               <div className="lotd-slide" key={i}>
                 <div className="lotd-type-row">
