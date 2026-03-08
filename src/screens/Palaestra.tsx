@@ -74,13 +74,20 @@ function buildQuestion(logos: Logos, qType: QuestionType, all: Logos[], content?
     let blanked: string;
     const esc = logos.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const aiSentence = content?.blankSentence ?? '';
-    // Reject AI sentence if BLANK is missing or only appears at the very end
-    const blankPos = aiSentence.toUpperCase().indexOf('BLANK');
-    const validAI = blankPos !== -1 && blankPos < aiSentence.trimEnd().length - 5;
+    const upperAI = aiSentence.toUpperCase();
+    const blankPos = upperAI.indexOf('BLANK');
+    const blankCount = (upperAI.match(/\bBLANK\b/g) ?? []).length;
+    // Reject if BLANK is missing, appears at the very end, or appears more than once (partial phrase replacement)
+    const validAI = blankPos !== -1 && blankPos < aiSentence.trimEnd().length - 5 && blankCount === 1;
     if (validAI) {
-      blanked = aiSentence.replace(/BLANK/gi, '______');
+      blanked = aiSentence.replace(/\bBLANK\b/gi, '______');
     } else {
-      blanked = logos.exampleSentence.replace(new RegExp(esc, 'gi'), '______');
+      const isPhrase = logos.text.includes(' ');
+      // For single words use word boundaries; for phrases match the exact string. First occurrence only.
+      const regex = isPhrase
+        ? new RegExp(esc, 'i')
+        : new RegExp('\\b' + esc + '\\b', 'i');
+      blanked = logos.exampleSentence.replace(regex, '______');
     }
     const wrongs = pool.slice(0, 3).map(d => d.text);
     while (wrongs.length < 3) wrongs.push(pool[wrongs.length % Math.max(pool.length, 1)]?.text ?? '—');
@@ -254,6 +261,19 @@ export const Palaestra = () => {
     if (tierFilter === 'phrase') pool = pool.filter(l => l.tier === 'Phrase');
     if (pool.length === 0) pool = [...logoi];
 
+    // Cap at 20 logoi, prioritising due-today then weakest mastery
+    const SESSION_CAP = 20;
+    if (pool.length > SESSION_CAP) {
+      const now = new Date();
+      pool = [...pool].sort((a, b) => {
+        const aDue = new Date(a.nextReviewDate) <= now;
+        const bDue = new Date(b.nextReviewDate) <= now;
+        if (aDue !== bDue) return aDue ? -1 : 1;
+        if (a.masteryLevel !== b.masteryLevel) return a.masteryLevel - b.masteryLevel;
+        return Math.random() - 0.5;
+      }).slice(0, SESSION_CAP);
+    }
+
     setSessionLoading(true);
 
     // Generate AI content for each word in the pool in parallel
@@ -274,12 +294,8 @@ export const Palaestra = () => {
 
     let questions: BoutQuestion[];
     if (trainingStyle === 'mixed') {
-      questions = shuffle(pool.flatMap(l => {
-        const content = contentMap.get(l.id);
-        const types: QuestionType[] = ['blank', 'usage', 'write'];
-        if (l.synonyms?.length) types.push('synonym');
-        return types.map(t => buildQuestion(l, t, logoi, content));
-      }));
+      // One varied question type per logos — not all types for every word
+      questions = shuffle(pool.map(l => buildQuestion(l, pickQType('mixed', l), logoi, contentMap.get(l.id))));
     } else {
       questions = shuffle(pool).map(l => buildQuestion(l, trainingStyle as QuestionType, logoi, contentMap.get(l.id)));
     }
