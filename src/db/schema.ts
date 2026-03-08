@@ -22,3 +22,13 @@ export const logoiTable = sqliteTable('logoi', {
 
 export type LogosRow    = typeof logoiTable.$inferSelect;
 export type NewLogosRow = typeof logoiTable.$inferInsert;
+
+export const activityTable = sqliteTable('activity', {
+  date: text('date').primaryKey().notNull(),
+});
+
+export const wotdLogTable = sqliteTable('wotd_log', {
+  date:        text('date').primaryKey().notNull(),
+  word_data:   text('word_data').notNull(),
+  phrase_data: text('phrase_data').notNull(),
+});

@@ -1,24 +1,48 @@
-import { createClient } from '@libsql/client';
+import { createClient } from '@libsql/client'
+import { drizzle } from 'drizzle-orm/libsql'
 
-const client = createClient({
-  url: 'file:pebble.db',
-  syncUrl: import.meta.env.VITE_TURSO_DATABASE_URL as string,
-  authToken: import.meta.env.VITE_TURSO_AUTH_TOKEN as string,
-});
+const isNative = typeof (window as any).Capacitor !== 'undefined'
+
+const client = createClient(
+  isNative
+    ? {
+        url: 'file:pebble.db',
+        syncUrl: import.meta.env.VITE_TURSO_DATABASE_URL as string,
+        authToken: import.meta.env.VITE_TURSO_AUTH_TOKEN as string
+      }
+    : {
+        url: import.meta.env.VITE_TURSO_DATABASE_URL,
+        authToken: import.meta.env.VITE_TURSO_AUTH_TOKEN
+      }
+)
 
 export async function initDb(): Promise<void> {
-  await client.sync();
+  if (isNative) {
+    await client.sync()
+  }
 }
 
-export function getConn() {
+export function getConn () {
   return {
-    async run(sql: string, params: unknown[] = []): Promise<{ changes: number }> {
-      const result = await client.execute({ sql, args: params as import('@libsql/client').InValue[] });
-      return { changes: result.rowsAffected };
+    async run (
+      sql: string,
+      params: unknown[] = []
+    ): Promise<{ changes: number }> {
+      const result = await client.execute({
+        sql,
+        args: params as import('@libsql/client').InValue[]
+      })
+      return { changes: result.rowsAffected }
     },
-    async query(sql: string, params: unknown[] = []): Promise<{ values: Record<string, unknown>[] }> {
-      const result = await client.execute({ sql, args: params as import('@libsql/client').InValue[] });
-      return { values: result.rows as unknown as Record<string, unknown>[] };
-    },
-  };
+    async query (
+      sql: string,
+      params: unknown[] = []
+    ): Promise<{ values: Record<string, unknown>[] }> {
+      const result = await client.execute({
+        sql,
+        args: params as import('@libsql/client').InValue[]
+      })
+      return { values: result.rows as unknown as Record<string, unknown>[] }
+    }
+  }
 }
