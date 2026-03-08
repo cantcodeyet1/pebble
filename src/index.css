@@ -21,7 +21,7 @@
   --text-dim: rgba(240,234,216,.42);
   --text-mid: rgba(240,234,216,.68);
   --radius: 16px;
-  --tab-h: 72px;
+  --tab-h: 84px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -727,7 +727,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  padding: 0 8px 8px;
+  padding: 0 8px 20px;
   z-index: 100;
 }
 .tab-item {
