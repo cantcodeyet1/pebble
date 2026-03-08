@@ -88,7 +88,7 @@ export async function generateSessionContent(
           '"blankSentence" — a natural sentence using the entry correctly; replace the ENTIRE entry (all words if it is a multi-word phrase) as a single unit with the one literal token BLANK, positioned inside the sentence (never at the end). Use exactly one BLANK. E.g. for "ephemeral": "The BLANK beauty of the moment stayed with her." For "cut to the chase": "She always managed to BLANK in her presentations." ' +
           (hasSynonyms
             ? '"synonymCorrect" — the single best synonym or near-equivalent, title case. ' +
-              '"synonymWrongs" — array of exactly 3 plausible but incorrect synonyms (different meaning, connotation, or register), title case. '
+              '"synonymWrongs" — array of exactly 3 plausible but incorrect synonyms (different meaning, connotation, or register), title case. Each element must be the word or short phrase only — no arrows, no explanations, no editorial notes, no extra punctuation, nothing after the word itself. '
             : '') +
           'Respond with valid JSON only.'
       },
@@ -164,4 +164,36 @@ export async function evaluateSentence(entry: string, definition: string, senten
     response_format: { type: 'json_object' }
   })
   return JSON.parse(response.choices[0].message.content || '{}') as EvalResult
+}
+
+export type ChallengeResult = { accepted: boolean; verdict: string; learning: string }
+
+export async function challengeGrading(
+  word: string,
+  userSentence: string,
+  originalFeedback: string,
+  userChallenge: string,
+): Promise<ChallengeResult> {
+  const response = await groq.chat.completions.create({
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You previously evaluated a sentence and flagged it as incorrect. Re-evaluate carefully and honestly. ' +
+          'Accept the challenge if the user demonstrates genuine understanding of the word meaning even if the construction is unconventional. ' +
+          'Accept passive voice as correct. Accept informal or creative constructions if meaning is clearly demonstrated. ' +
+          'Only reject if the word is genuinely misused in a way that reveals misunderstanding of its meaning. ' +
+          'Do not penalise for style or elegance. ' +
+          'Respond in JSON with exactly these fields: accepted (boolean), verdict (single sentence explaining final decision — if accepted acknowledge what the user got right, if rejected explain precisely why), learning (if accepted: what this challenge taught about valid usage, if rejected: what correct usage looks like). ' +
+          'No markdown no preamble.',
+      },
+      {
+        role: 'user',
+        content: `Word: "${word}"\nLearner's sentence: "${userSentence}"\nOriginal feedback: "${originalFeedback}"\nLearner's challenge: "${userChallenge}"`,
+      },
+    ],
+    response_format: { type: 'json_object' },
+  })
+  return JSON.parse(response.choices[0].message.content || '{}') as ChallengeResult
 }

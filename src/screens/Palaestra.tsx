@@ -4,7 +4,7 @@ import { usePebbleStore, Logos } from '../store';
 import { updateLogos } from '../db/logoi';
 import { recordActivityDb } from '../db/activity';
 import { addDays } from 'date-fns';
-import { evaluateSentence, generateSessionContent, SessionContent } from '../services/ai.service';
+import { evaluateSentence, generateSessionContent, SessionContent, challengeGrading, ChallengeResult } from '../services/ai.service';
 
 type Mode = 'drill' | 'agora';
 type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'new' | 'register' | 'manual' | 'random';
@@ -71,24 +71,14 @@ function buildQuestion(logos: Logos, qType: QuestionType, all: Logos[], content?
   }
 
   if (qType === 'blank') {
-    let blanked: string;
     const esc = logos.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const aiSentence = content?.blankSentence ?? '';
-    const upperAI = aiSentence.toUpperCase();
-    const blankPos = upperAI.indexOf('BLANK');
-    const blankCount = (upperAI.match(/\bBLANK\b/g) ?? []).length;
-    // Reject if BLANK is missing, appears at the very end, or appears more than once (partial phrase replacement)
-    const validAI = blankPos !== -1 && blankPos < aiSentence.trimEnd().length - 5 && blankCount === 1;
-    if (validAI) {
-      blanked = aiSentence.replace(/\bBLANK\b/gi, '______');
-    } else {
-      const isPhrase = logos.text.includes(' ');
-      // For single words use word boundaries; for phrases match the exact string. First occurrence only.
-      const regex = isPhrase
-        ? new RegExp(esc, 'i')
-        : new RegExp('\\b' + esc + '\\b', 'i');
-      blanked = logos.exampleSentence.replace(regex, '______');
-    }
+    const isPhrase = logos.text.includes(' ');
+    // Always find the exact target word/phrase in the sentence (case-insensitive, first occurrence only).
+    const regex = isPhrase
+      ? new RegExp(esc, 'i')
+      : new RegExp('\\b' + esc + '\\b', 'i');
+    const source = logos.exampleSentence;
+    const blanked = source.replace(regex, '______');
     const wrongs = pool.slice(0, 3).map(d => d.text);
     while (wrongs.length < 3) wrongs.push(pool[wrongs.length % Math.max(pool.length, 1)]?.text ?? '—');
     const opts = shuffle([logos.text, ...wrongs.slice(0, 3)]);
@@ -189,6 +179,10 @@ export const Palaestra = () => {
   const [evaluating, setEvaluating]         = useState(false);
   const [aiFeedback, setAiFeedback]         = useState<string | null>(null);
   const [sessionLoading, setSessionLoading] = useState(false);
+  const [challengeOpen, setChallengeOpen]     = useState(false);
+  const [challengeInput, setChallengeInput]   = useState('');
+  const [challenging, setChallenging]         = useState(false);
+  const [challengeResult, setChallengeResult] = useState<ChallengeResult | null>(null);
 
   const currentQ = boutQuestions[qIndex] ?? null;
   const totalQ   = boutQuestions.length;
@@ -307,6 +301,8 @@ export const Palaestra = () => {
     setAnswered(null);
     setWriteInput('');
     setAiFeedback(null);
+    setChallengeResult(null);
+    setChallengeInput('');
     setBoutOpen(true);
   };
 
@@ -343,6 +339,8 @@ export const Palaestra = () => {
       setAnswered(null);
       setWriteInput('');
       setAiFeedback(null);
+      setChallengeResult(null);
+      setChallengeInput('');
     } else {
       setBoutDone(true);
       if (mode === 'drill') {
@@ -365,6 +363,41 @@ export const Palaestra = () => {
       updateLogos(id, { starred: nowStarred }).catch(() => {});
       return next;
     });
+  };
+
+  const handleChallenge = async () => {
+    if (!challengeInput.trim() || !currentQ) return;
+    setChallenging(true);
+    try {
+      const result = await challengeGrading(
+        currentQ.logos.text,
+        writeInput,
+        aiFeedback ?? currentQ.feedback,
+        challengeInput,
+      );
+      setChallengeResult(result);
+      setChallengeOpen(false);
+      setChallengeInput('');
+      if (result.accepted) {
+        setSessionResults(prev => {
+          const lastIdx = [...prev].reverse().findIndex(r => r.logos.id === currentQ.logos.id);
+          if (lastIdx === -1) return prev;
+          const actualIdx = prev.length - 1 - lastIdx;
+          return prev.map((r, i) => i === actualIdx ? { ...r, correct: true } : r);
+        });
+        // Undo the incorrect penalty then apply correct: two updateMastery(true) calls
+        // bring store from (original-1) → original → original+1
+        updateMastery(currentQ.logos.id, true);
+        updateMastery(currentQ.logos.id, true);
+        const newLevel = Math.min(currentQ.logos.masteryLevel + 1, 5);
+        const nextReview = addDays(new Date(), Math.pow(2, newLevel)).toISOString();
+        updateLogos(currentQ.logos.id, { mastery_level: newLevel, next_review_date: nextReview }).catch(() => {});
+      }
+    } catch {
+      // silent — leave feedback bar as-is
+    } finally {
+      setChallenging(false);
+    }
   };
 
   useEffect(() => { return () => { setBoutOpen(false); }; }, []);
@@ -821,19 +854,49 @@ export const Palaestra = () => {
                       </button>
                     )}
                     {answered !== null && (
-                      <div className="feedback-bar" style={answered === -1 ? { background: 'rgba(107,26,26,.4)', borderColor: 'rgba(248,113,113,.25)' } : {}}>
-                        {answered === 0
-                          ? <div className="fb-correct" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                              Correct
+                      <div className="feedback-bar" style={
+                        challengeResult?.accepted
+                          ? { background: 'rgba(26,107,26,.4)', borderColor: 'rgba(74,222,128,.25)' }
+                          : answered === -1 && !challengeResult
+                            ? { background: 'rgba(107,26,26,.4)', borderColor: 'rgba(248,113,113,.25)' }
+                            : {}
+                      }>
+                        {challengeResult ? (
+                          <>
+                            <div className="fb-correct" style={{ display: 'flex', alignItems: 'center', gap: 6, color: challengeResult.accepted ? '#4ade80' : '#f87171' }}>
+                              {challengeResult.accepted
+                                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                              }
+                              {challengeResult.accepted ? 'Accepted' : 'Challenge Rejected'}
                             </div>
-                          : <div className="fb-correct" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f87171' }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                              Needs work
-                            </div>
-                        }
-                        <div className="fb-note">{aiFeedback ?? currentQ.feedback}</div>
-                        <button style={{ marginTop: 6, background: 'var(--gold)', color: '#000', border: 'none', borderRadius: 10, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={nextQ}>
+                            <div className="fb-note">{challengeResult.verdict}</div>
+                            <div className="fb-note" style={{ marginTop: 4, opacity: 0.75 }}>{challengeResult.learning}</div>
+                          </>
+                        ) : (
+                          <>
+                            {answered === 0
+                              ? <div className="fb-correct" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                  Correct
+                                </div>
+                              : <div className="fb-correct" style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#f87171' }}>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                  Needs work
+                                </div>
+                            }
+                            <div className="fb-note">{aiFeedback ?? currentQ.feedback}</div>
+                            {answered === -1 && (
+                              <button
+                                onClick={() => setChallengeOpen(true)}
+                                style={{ background: 'none', border: 'none', color: 'rgba(248,113,113,.75)', fontSize: 12, cursor: 'pointer', padding: '4px 0 0', textDecoration: 'underline', fontFamily: "'DM Sans', sans-serif", textAlign: 'left' }}
+                              >
+                                Challenge this →
+                              </button>
+                            )}
+                          </>
+                        )}
+                        <button style={{ marginTop: 8, background: 'var(--gold)', color: '#000', border: 'none', borderRadius: 10, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }} onClick={nextQ}>
                           {qIndex < totalQ - 1 ? 'Continue →' : 'Finish Session'}
                         </button>
                       </div>
@@ -882,6 +945,50 @@ export const Palaestra = () => {
           </div>
         )}
       </div>
+
+      {/* Challenge overlay */}
+      {challengeOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.65)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '0 24px' }}
+          onClick={() => { if (!challenging) { setChallengeOpen(false); setChallengeInput(''); } }}
+        >
+          <div
+            style={{ background: 'var(--glass)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid var(--glass-border)', borderRadius: 20, padding: '28px 24px', width: '100%', maxWidth: 342 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 26, fontWeight: 600, fontStyle: 'italic', color: 'var(--text)', marginBottom: 6 }}>
+              Make Your Case
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 18, lineHeight: 1.5 }}>
+              Argue why your sentence is correct.
+            </div>
+            <textarea
+              style={{ width: '100%', background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '14px', fontSize: 13, color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", minHeight: 120, resize: 'none', outline: 'none', lineHeight: 1.6, boxSizing: 'border-box' }}
+              placeholder="Make your argument here…"
+              value={challengeInput}
+              onChange={e => setChallengeInput(e.target.value)}
+              disabled={challenging}
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button
+                onClick={() => { setChallengeOpen(false); setChallengeInput(''); }}
+                disabled={challenging}
+                style={{ flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid var(--glass-border)', borderRadius: 12, padding: '12px', fontSize: 14, color: 'var(--text-dim)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { void handleChallenge(); }}
+                disabled={!challengeInput.trim() || challenging}
+                style={{ flex: 1, background: 'var(--gold)', color: '#000', border: 'none', borderRadius: 12, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", opacity: (!challengeInput.trim() || challenging) ? 0.5 : 1 }}
+              >
+                {challenging ? 'Reviewing…' : 'Submit Challenge'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
