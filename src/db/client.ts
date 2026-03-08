@@ -1,33 +1,24 @@
-type MockConn = {
-  run(sql: string, params?: unknown[]): Promise<{ changes: number }>;
-  query(sql: string, params?: unknown[]): Promise<{ values: Record<string, unknown>[] }>;
-};
+import { createClient } from '@libsql/client';
 
-const conn: MockConn = {
-  async run(sql, params = []) {
-    const res = await fetch('/api/db/run', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sql, params }),
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-  },
-  async query(sql, params = []) {
-    const res = await fetch('/api/db/query', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sql, params }),
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-  },
-};
+const client = createClient({
+  url: 'file:pebble.db',
+  syncUrl: import.meta.env.VITE_TURSO_DATABASE_URL as string,
+  authToken: import.meta.env.VITE_TURSO_AUTH_TOKEN as string,
+});
 
 export async function initDb(): Promise<void> {
-  // Table creation is handled by the Vite dev server on startup.
+  await client.sync();
 }
 
 export function getConn() {
-  return conn;
+  return {
+    async run(sql: string, params: unknown[] = []): Promise<{ changes: number }> {
+      const result = await client.execute({ sql, args: params as import('@libsql/client').InValue[] });
+      return { changes: result.rowsAffected };
+    },
+    async query(sql: string, params: unknown[] = []): Promise<{ values: Record<string, unknown>[] }> {
+      const result = await client.execute({ sql, args: params as import('@libsql/client').InValue[] });
+      return { values: result.rows as unknown as Record<string, unknown>[] };
+    },
+  };
 }
