@@ -908,6 +908,7 @@ body::before {
   animation: pulse 2s infinite;
 }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+@keyframes spin { to { transform: rotate(360deg); } }
 @keyframes slideUp  { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes fadeInBg { from { opacity: 0; }               to { opacity: 1; } }
 .ai-lbl { font-size: 10px; font-weight: 600; letter-spacing: .13em; color: rgba(74,222,128,.7); text-transform: uppercase; }

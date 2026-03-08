@@ -4,7 +4,7 @@ import { usePebbleStore, Logos } from '../store';
 import { updateLogos } from '../db/logoi';
 import { recordActivityDb } from '../db/activity';
 import { addDays } from 'date-fns';
-import { evaluateSentence } from '../services/ai.service';
+import { evaluateSentence, generateSessionContent, SessionContent } from '../services/ai.service';
 
 type Mode = 'drill' | 'agora';
 type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'new' | 'register' | 'manual';
@@ -47,7 +47,7 @@ function pickQType(style: TrainingStyle, logos: Logos): QuestionType {
   return opts[Math.floor(Math.random() * opts.length)];
 }
 
-function buildQuestion(logos: Logos, qType: QuestionType, all: Logos[]): BoutQuestion {
+function buildQuestion(logos: Logos, qType: QuestionType, all: Logos[], content?: SessionContent): BoutQuestion {
   const pool = shuffle(all.filter(l => l.id !== logos.id));
   const feedback = logos.definition;
 
@@ -56,34 +56,54 @@ function buildQuestion(logos: Logos, qType: QuestionType, all: Logos[]): BoutQue
   }
 
   if (qType === 'synonym') {
-    const correct = logos.synonyms?.[0] ?? logos.text;
-    const wrongs = pool.slice(0, 3).map(d => d.synonyms?.[0] ?? d.text);
-    while (wrongs.length < 3) wrongs.push(pool[wrongs.length % Math.max(pool.length, 1)]?.text ?? '—');
+    let correct: string;
+    let wrongs: string[];
+    if (content?.synonymCorrect && content?.synonymWrongs?.length === 3) {
+      correct = content.synonymCorrect;
+      wrongs = [...content.synonymWrongs];
+    } else {
+      correct = logos.synonyms?.[0] ?? logos.text;
+      wrongs = pool.slice(0, 3).map(d => d.synonyms?.[0] ?? d.text);
+      while (wrongs.length < 3) wrongs.push(pool[wrongs.length % Math.max(pool.length, 1)]?.text ?? '—');
+    }
     const opts = shuffle([correct, ...wrongs.slice(0, 3)]);
     return { qType, logos, prompt: `Which is closest in meaning to "${logos.text}"?`, options: opts, correctIndex: opts.indexOf(correct), feedback };
   }
 
   if (qType === 'blank') {
-    const esc = logos.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const blanked = logos.exampleSentence.replace(new RegExp(esc, 'gi'), '______');
+    let blanked: string;
+    if (content?.blankSentence) {
+      blanked = content.blankSentence.replace(/BLANK/g, '______');
+    } else {
+      const esc = logos.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      blanked = logos.exampleSentence.replace(new RegExp(esc, 'gi'), '______');
+    }
     const wrongs = pool.slice(0, 3).map(d => d.text);
     while (wrongs.length < 3) wrongs.push(pool[wrongs.length % Math.max(pool.length, 1)]?.text ?? '—');
     const opts = shuffle([logos.text, ...wrongs.slice(0, 3)]);
     return { qType, logos, prompt: blanked, options: opts, correctIndex: opts.indexOf(logos.text), feedback };
   }
 
-  // usage — wrong sentences all contain the target word substituted into other words' sentences
-  const targetLower = logos.text.toLowerCase();
-  const wrongs: string[] = pool.slice(0, 3).map(d => {
-    const esc = d.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return d.exampleSentence.replace(new RegExp(esc, 'gi'), (match) => {
-      const startsUpper = match[0] === match[0].toUpperCase() && match[0] !== match[0].toLowerCase();
-      return startsUpper ? targetLower.charAt(0).toUpperCase() + targetLower.slice(1) : targetLower;
+  // usage
+  let correctSentence: string;
+  let wrongSentences: string[];
+  if (content?.usageCorrect && content?.usageWrongs?.length === 3) {
+    correctSentence = content.usageCorrect;
+    wrongSentences = [...content.usageWrongs];
+  } else {
+    correctSentence = logos.exampleSentence;
+    const targetLower = logos.text.toLowerCase();
+    wrongSentences = pool.slice(0, 3).map(d => {
+      const esc = d.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return d.exampleSentence.replace(new RegExp(esc, 'gi'), (match) => {
+        const startsUpper = match[0] === match[0].toUpperCase() && match[0] !== match[0].toLowerCase();
+        return startsUpper ? targetLower.charAt(0).toUpperCase() + targetLower.slice(1) : targetLower;
+      });
     });
-  });
-  while (wrongs.length < 3) wrongs.push(`The concept of ${logos.text} was misunderstood by everyone in the room.`);
-  const opts = shuffle([logos.exampleSentence, ...wrongs.slice(0, 3)]);
-  return { qType, logos, prompt: `Which sentence uses "${logos.text}" correctly?`, options: opts, correctIndex: opts.indexOf(logos.exampleSentence), feedback };
+    while (wrongSentences.length < 3) wrongSentences.push(`The concept of ${logos.text} was misunderstood by everyone in the room.`);
+  }
+  const opts = shuffle([correctSentence, ...wrongSentences.slice(0, 3)]);
+  return { qType, logos, prompt: `Which sentence uses "${logos.text}" correctly?`, options: opts, correctIndex: opts.indexOf(correctSentence), feedback };
 }
 
 const qTypeLabel: Record<QuestionType, string> = {
@@ -156,6 +176,7 @@ export const Palaestra = () => {
   const [writeInput, setWriteInput]         = useState('');
   const [evaluating, setEvaluating]         = useState(false);
   const [aiFeedback, setAiFeedback]         = useState<string | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
 
   const currentQ = boutQuestions[qIndex] ?? null;
   const totalQ   = boutQuestions.length;
@@ -191,11 +212,11 @@ export const Palaestra = () => {
   // ── navigation ────────────────────────────────────────────────────────────
 
   const palGo   = (s: number) => setStep(s);
-  const p0Next  = () => { if (mode === 'drill') startBout(); else palGo(1); };
+  const p0Next  = () => { if (mode === 'drill') void startBout(); else palGo(1); };
 
   // ── bout lifecycle ────────────────────────────────────────────────────────
 
-  const startBout = () => {
+  const startBout = async () => {
     let pool = [...logoi];
     if (mode === 'drill') {
       const now = new Date();
@@ -216,15 +237,34 @@ export const Palaestra = () => {
     if (tierFilter === 'phrase') pool = pool.filter(l => l.tier === 'Phrase');
     if (pool.length === 0) pool = [...logoi];
 
+    setSessionLoading(true);
+
+    // Generate AI content for each word in the pool in parallel
+    const distractorTexts = pool.map(l => l.text);
+    const contentMap = new Map<string, SessionContent>();
+    await Promise.all(pool.map(async (l) => {
+      try {
+        const hasSyns = !!(l.synonyms?.length);
+        const distractors = distractorTexts.filter(t => t !== l.text);
+        const content = await generateSessionContent(l.text, l.definition, hasSyns, distractors);
+        contentMap.set(l.id, content);
+      } catch {
+        // fallback to static content for this word
+      }
+    }));
+
+    setSessionLoading(false);
+
     let questions: BoutQuestion[];
     if (trainingStyle === 'mixed') {
       questions = shuffle(pool.flatMap(l => {
+        const content = contentMap.get(l.id);
         const types: QuestionType[] = ['blank', 'usage', 'write'];
         if (l.synonyms?.length) types.push('synonym');
-        return types.map(t => buildQuestion(l, t, logoi));
+        return types.map(t => buildQuestion(l, t, logoi, content));
       }));
     } else {
-      questions = shuffle(pool).map(l => buildQuestion(l, trainingStyle as QuestionType, logoi));
+      questions = shuffle(pool).map(l => buildQuestion(l, trainingStyle as QuestionType, logoi, contentMap.get(l.id)));
     }
     setBoutQuestions(questions);
     setSessionResults([]);
@@ -298,7 +338,7 @@ export const Palaestra = () => {
   useEffect(() => {
     if (locState.autoStart && logoi.length > 0 && !autoStarted.current) {
       autoStarted.current = true;
-      startBout();
+      void startBout();
     }
   }, [logoi]);
 
@@ -554,12 +594,20 @@ export const Palaestra = () => {
               ))}
             </div>
 
-            <button className="pal-enter-btn" onClick={startBout}>Enter the Palaestra →</button>
+            <button className="pal-enter-btn" onClick={() => void startBout()}>Enter the Palaestra →</button>
           </div>
 
           {/* Panel 4 placeholder (slider is 500% wide) */}
           <div className="pal-panel" />
         </div>
+
+        {/* ── LOADING OVERLAY ── */}
+        {sessionLoading && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: 'var(--bg)' }}>
+            <div style={{ width: 36, height: 36, border: '3px solid rgba(212,160,23,.2)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: 'var(--text-dim)', letterSpacing: '.04em' }}>Preparing your session…</div>
+          </div>
+        )}
 
         {/* ── THE BOUT ── */}
         {boutOpen && (
@@ -627,7 +675,7 @@ export const Palaestra = () => {
 
                 {/* Actions */}
                 <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 8 }}>
-                  <button className="pal-enter-btn" onClick={startBout}>Train Again →</button>
+                  <button className="pal-enter-btn" onClick={() => void startBout()}>Train Again →</button>
                   <button
                     style={{ background: 'none', border: '1px solid rgba(255,255,255,.1)', borderRadius: 12, padding: '12px', fontSize: 14, color: 'var(--text-dim)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
                     onClick={() => { setBoutOpen(false); setBoutDone(false); setStep(0); }}

@@ -50,6 +50,49 @@ export async function classify (entry: string): Promise<ClassifyResult> {
   ) as ClassifyResult
 }
 
+export type SessionContent = {
+  usageCorrect: string;
+  usageWrongs: [string, string, string];
+  blankSentence: string;       // contains "BLANK" as placeholder
+  synonymCorrect?: string;
+  synonymWrongs?: [string, string, string];
+}
+
+export async function generateSessionContent(
+  entry: string,
+  definition: string,
+  hasSynonyms: boolean,
+  distractors: string[],
+): Promise<SessionContent> {
+  const response = await groq.chat.completions.create({
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You generate vocabulary training question content. Respond with valid JSON only, no markdown. ' +
+          'Required fields: ' +
+          '"usageCorrect" — one natural, correct sentence using the word in a fresh scenario (sentence case, must contain the word). ' +
+          '"usageWrongs" — array of exactly 3 sentences that misuse the word subtly (wrong register, wrong collocation, grammatically wrong placement); each must contain the word; sentence case. ' +
+          '"blankSentence" — a natural sentence using the word correctly; replace the word with the literal string BLANK, e.g. "The BLANK beauty of the moment stayed with her." ' +
+          (hasSynonyms
+            ? '"synonymCorrect" — the single best synonym or near-equivalent, title case. ' +
+              '"synonymWrongs" — array of exactly 3 plausible but incorrect synonyms (different meaning, connotation, or register), title case. '
+            : '') +
+          'Respond with valid JSON only.'
+      },
+      {
+        role: 'user',
+        content:
+          `Word: "${entry}"\nDefinition: "${definition}"` +
+          (distractors.length ? `\nOther session words (for context only): ${distractors.slice(0, 5).join(', ')}` : ''),
+      },
+    ],
+    response_format: { type: 'json_object' },
+  });
+  return JSON.parse(response.choices[0].message.content || '{}') as SessionContent;
+}
+
 export type EvalResult = { correct: boolean; feedback: string }
 
 export async function evaluateSentence(entry: string, definition: string, sentence: string): Promise<EvalResult> {
