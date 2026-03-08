@@ -69,11 +69,13 @@ export const Callistratum = () => {
     }
   }, [logoi]);
 
-  const filteredLogoi = logoi.filter(l => {
-    const matchesSearch = l.text.toLowerCase().includes(search.toLowerCase());
-    const matchesTier = selectedTier === 'All' || l.tier === selectedTier;
-    return matchesSearch && matchesTier;
-  });
+  const filteredLogoi = logoi
+    .filter(l => {
+      const matchesSearch = l.text.toLowerCase().includes(search.toLowerCase());
+      const matchesTier = selectedTier === 'All' || l.tier === selectedTier;
+      return matchesSearch && matchesTier;
+    })
+    .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
 
   const toggleStar = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();

@@ -532,6 +532,7 @@ body::before {
   flex-direction: column;
   padding: 52px 20px 28px;
   gap: 14px;
+  overflow-y: auto;
   z-index: 50;
 }
 .bout-top { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
@@ -568,11 +569,11 @@ body::before {
   border: 1px solid rgba(212,160,23,.2);
   border-radius: 20px;
   padding: 24px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
   box-shadow: 0 20px 60px rgba(0,0,0,.5);
-  flex: 1;
   position: relative;
   overflow: hidden;
 }

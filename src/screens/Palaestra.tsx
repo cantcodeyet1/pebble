@@ -7,7 +7,7 @@ import { addDays } from 'date-fns';
 import { evaluateSentence } from '../services/ai.service';
 
 type Mode = 'drill' | 'agora';
-type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'register' | 'manual';
+type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'new' | 'register' | 'manual';
 type TierFilter = 'all' | 'word' | 'phrase';
 type TrainingStyle = 'mixed' | 'blank' | 'synonym' | 'usage' | 'write';
 type QuestionType = 'blank' | 'synonym' | 'usage' | 'write';
@@ -19,6 +19,7 @@ interface BoutQuestion {
   options: string[];
   correctIndex: number; // -1 for write
   feedback: string;
+  isRetry?: boolean;
 }
 
 interface SessionResult {
@@ -71,9 +72,16 @@ function buildQuestion(logos: Logos, qType: QuestionType, all: Logos[]): BoutQue
     return { qType, logos, prompt: blanked, options: opts, correctIndex: opts.indexOf(logos.text), feedback };
   }
 
-  // usage
-  const wrongs = pool.slice(0, 3).map(d => d.exampleSentence);
-  while (wrongs.length < 3) wrongs.push(pool[wrongs.length % Math.max(pool.length, 1)]?.exampleSentence ?? '—');
+  // usage — wrong sentences all contain the target word substituted into other words' sentences
+  const targetLower = logos.text.toLowerCase();
+  const wrongs: string[] = pool.slice(0, 3).map(d => {
+    const esc = d.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return d.exampleSentence.replace(new RegExp(esc, 'gi'), (match) => {
+      const startsUpper = match[0] === match[0].toUpperCase() && match[0] !== match[0].toLowerCase();
+      return startsUpper ? targetLower.charAt(0).toUpperCase() + targetLower.slice(1) : targetLower;
+    });
+  });
+  while (wrongs.length < 3) wrongs.push(`The concept of ${logos.text} was misunderstood by everyone in the room.`);
   const opts = shuffle([logos.exampleSentence, ...wrongs.slice(0, 3)]);
   return { qType, logos, prompt: `Which sentence uses "${logos.text}" correctly?`, options: opts, correctIndex: opts.indexOf(logos.exampleSentence), feedback };
 }
@@ -161,6 +169,7 @@ export const Palaestra = () => {
       return due.length > 0 ? due : r;
     }
     if (filter === 'starred')  return r.filter(l => l.starred);
+    if (filter === 'new')      return r.filter(l => l.masteryLevel === 0);
     if (filter === 'weak')     return r.filter(l => l.masteryLevel <= 2);
     if (filter === 'mild')     return r.filter(l => l.masteryLevel === 3);
     if (filter === 'strong')   return r.filter(l => l.masteryLevel >= 4);
@@ -194,6 +203,7 @@ export const Palaestra = () => {
       pool = due.length > 0 ? due : pool;
     } else {
       if (filter === 'starred')       pool = pool.filter(l => l.starred);
+      else if (filter === 'new')      pool = pool.filter(l => l.masteryLevel === 0);
       else if (filter === 'weak')     pool = pool.filter(l => l.masteryLevel <= 2);
       else if (filter === 'mild')     pool = pool.filter(l => l.masteryLevel === 3);
       else if (filter === 'strong')   pool = pool.filter(l => l.masteryLevel >= 4);
@@ -207,13 +217,14 @@ export const Palaestra = () => {
     if (pool.length === 0) pool = [...logoi];
 
     let questions: BoutQuestion[];
-    if (trainingStyle === 'mixed' && pool.length === 1) {
-      const l = pool[0];
-      const types: QuestionType[] = ['blank', 'usage', 'write'];
-      if (l.synonyms?.length) types.push('synonym');
-      questions = shuffle(types.map(t => buildQuestion(l, t, logoi)));
+    if (trainingStyle === 'mixed') {
+      questions = shuffle(pool.flatMap(l => {
+        const types: QuestionType[] = ['blank', 'usage', 'write'];
+        if (l.synonyms?.length) types.push('synonym');
+        return types.map(t => buildQuestion(l, t, logoi));
+      }));
     } else {
-      questions = shuffle(pool).map(l => buildQuestion(l, pickQType(trainingStyle, l), logoi));
+      questions = shuffle(pool).map(l => buildQuestion(l, trainingStyle as QuestionType, logoi));
     }
     setBoutQuestions(questions);
     setSessionResults([]);
@@ -237,13 +248,20 @@ export const Palaestra = () => {
   const pickAnswer = (idx: number) => {
     if (answered !== null || !currentQ) return;
     setAnswered(idx);
-    recordResult(currentQ.logos, idx === currentQ.correctIndex);
+    const correct = idx === currentQ.correctIndex;
+    recordResult(currentQ.logos, correct);
+    if (!correct && !currentQ.isRetry) {
+      setBoutQuestions(prev => [...prev, { ...currentQ, isRetry: true }]);
+    }
   };
 
   const selfMark = (correct: boolean) => {
     if (answered !== null || !currentQ) return;
     recordResult(currentQ.logos, correct);
     setAnswered(correct ? 0 : -1);
+    if (!correct && !currentQ.isRetry) {
+      setBoutQuestions(prev => [...prev, { ...currentQ, isRetry: true }]);
+    }
   };
 
   const nextQ = () => {
@@ -318,6 +336,11 @@ export const Palaestra = () => {
       id: 'starred', name: 'Starred Words',
       sub: `${logoi.filter(l => l.starred).length} logoi starred`,
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--gold)" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+    },
+    {
+      id: 'new', name: 'New',
+      sub: `Untrained · ${logoi.filter(l => l.masteryLevel === 0).length} logoi`,
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>,
     },
     {
       id: 'weak', name: 'Weakly Known',
