@@ -1,15 +1,9 @@
-// Capacitor config — type inlined to avoid requiring @capacitor/cli dev dependency
-const config = {
-  appId: 'com.pebble.app',
+import type { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'com.kwanix.pebble',
   appName: 'Pebble',
-  webDir: 'dist',
-  plugins: {
-    CapacitorSQLite: {
-      iosDatabaseLocation: 'Library/CapacitorDatabase',
-      iosIsEncryption: false,
-      androidIsEncryption: false,
-    },
-  },
+  webDir: 'dist'
 };
 
 export default config;

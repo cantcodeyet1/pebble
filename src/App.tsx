@@ -7,7 +7,6 @@ import { Palaestra } from "./screens/Palaestra";
 import { Callistratum } from "./screens/Callistratum";
 import { Philippics } from "./screens/Philippics";
 import { BottomNav } from "./components/BottomNav";
-import { classify} from "./services/ai.service";
 
 const ScreenWrapper = ({ children }: { children: React.ReactNode }) => (
   <motion.div
@@ -26,7 +25,7 @@ const AnimatedRoutes = () => {
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <Routes location={location}>
         <Route
           path="/"
           element={

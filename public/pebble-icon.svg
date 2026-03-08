@@ -1,0 +1,54 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="amberBg" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#3d2e08"/>
+      <stop offset="55%" stop-color="#1e1608"/>
+      <stop offset="100%" stop-color="#0e0d0b"/>
+    </radialGradient>
+    <linearGradient id="goldStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0bc2e"/>
+      <stop offset="50%" stop-color="#d4a017"/>
+      <stop offset="100%" stop-color="#8a6a10"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <circle cx="256" cy="256" r="256" fill="url(#amberBg)"/>
+  <circle cx="256" cy="256" r="234" fill="none" stroke="url(#goldStroke)" stroke-width="3" opacity="0.5"/>
+  <circle cx="256" cy="256" r="222" fill="none" stroke="url(#goldStroke)" stroke-width="1" opacity="0.2"/>
+
+  <text x="270" y="370"
+        font-family="'Cormorant Garamond', 'Georgia', serif"
+        font-size="370"
+        font-style="italic"
+        font-weight="700"
+        text-anchor="middle"
+        fill="rgba(212,160,23,0.12)"
+        filter="url(#glow)">p</text>
+
+  <text x="270" y="370"
+        font-family="'Cormorant Garamond', 'Georgia', serif"
+        font-size="370"
+        font-style="italic"
+        font-weight="700"
+        text-anchor="middle"
+        fill="none"
+        stroke="url(#goldStroke)"
+        stroke-width="7"
+        stroke-linejoin="round">p</text>
+
+  <text x="270" y="370"
+        font-family="'Cormorant Garamond', 'Georgia', serif"
+        font-size="370"
+        font-style="italic"
+        font-weight="700"
+        text-anchor="middle"
+        fill="none"
+        stroke="rgba(240,188,46,0.28)"
+        stroke-width="2"
+        stroke-linejoin="round">p</text>
+
+</svg>
