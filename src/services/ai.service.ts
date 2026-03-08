@@ -93,6 +93,43 @@ export async function generateSessionContent(
   return JSON.parse(response.choices[0].message.content || '{}') as SessionContent;
 }
 
+export type WotdResult = { word: ClassifyResult; phrase: ClassifyResult };
+
+export async function generateWotd(existingEntries: string[]): Promise<WotdResult> {
+  const response = await groq.chat.completions.create({
+    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You generate a daily vocabulary entry for a learner of sophisticated English. ' +
+          'Return a JSON object with exactly two keys: "word" and "phrase". ' +
+          'Each must have these fields: ' +
+          '"logos" (the entry in title case), ' +
+          '"tier" ("Word" for single words, "Phrase" for multi-word expressions), ' +
+          '"pos" (part of speech — for words: Adjective/Noun/Verb/Adverb; for phrases: Idiomatic Expression/Verb Phrase/Collocation/Noun Phrase), ' +
+          '"phonetic" (IPA for words e.g. /ˈef.ɪ.mər.əl/, empty string for phrases), ' +
+          '"register" (one of: Formal, Academic, Literary, Informal, Idiomatic), ' +
+          '"definition" (concise, sentence case), ' +
+          '"synonyms" (array of 2–4 related words or phrases in title case), ' +
+          '"sentence" (a natural example sentence in sentence case). ' +
+          '"word" must be a single uncommon but genuinely useful English word. ' +
+          '"phrase" must be a multi-word idiom, collocation, or expression. ' +
+          'Do NOT use any entry from the exclusion list. ' +
+          'Respond with valid JSON only, no markdown.',
+      },
+      {
+        role: 'user',
+        content: existingEntries.length
+          ? `Exclusion list (already in library): ${existingEntries.slice(0, 60).join(', ')}`
+          : "Generate today's word and phrase.",
+      },
+    ],
+    response_format: { type: 'json_object' },
+  });
+  return JSON.parse(response.choices[0].message.content || '{}') as WotdResult;
+}
+
 export type EvalResult = { correct: boolean; feedback: string }
 
 export async function evaluateSentence(entry: string, definition: string, sentence: string): Promise<EvalResult> {

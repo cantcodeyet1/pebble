@@ -1,14 +1,15 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePebbleStore } from '../store';
+import type { SlideData } from '../store';
 import { DrillIcon, AgoraIcon } from './Palaestra';
 import { addLogos as dbAddLogos } from '../db/logoi';
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-const slides = [
+const FALLBACK_SLIDES: SlideData[] = [
   {
-    tier: 'Word' as const,
+    tier: 'Word',
     tc: 'tb-word',
     word: 'Ephemeral',
     ipa: '/ɪˈfem.ər.əl/',
@@ -20,7 +21,7 @@ const slides = [
     btnLabel: 'Train this word →',
   },
   {
-    tier: 'Phrase' as const,
+    tier: 'Phrase',
     tc: 'tb-phrase',
     word: 'Bite the bullet',
     ipa: '',
@@ -34,7 +35,8 @@ const slides = [
 ];
 
 export const Ecclesia = () => {
-  const { streak, logoi, appendLogos, activityDates } = usePebbleStore();
+  const { streak, logoi, appendLogos, activityDates, todaySlides } = usePebbleStore();
+  const slides = todaySlides ?? FALLBACK_SLIDES;
 
   const weekDays = useMemo(() => {
     const today = new Date();
@@ -52,6 +54,7 @@ export const Ecclesia = () => {
   }, [activityDates]);
   const navigate = useNavigate();
   const [slide, setSlide] = useState(0);
+  const goSlide = (i: number) => setSlide(Math.max(0, Math.min(slides.length - 1, i)));
   const isSaved = (i: number) =>
     logoi.some(l => l.text.toLowerCase() === slides[i].word.toLowerCase());
 
@@ -89,7 +92,7 @@ export const Ecclesia = () => {
 
   const dueCount = logoi.filter(l => l.nextReviewDate <= new Date()).length;
 
-  const goSlide = (i: number) => setSlide(Math.max(0, Math.min(1, i)));
+
 
   const onDragStart = (clientX: number) => {
     dragStartRef.current = clientX;
@@ -158,7 +161,7 @@ export const Ecclesia = () => {
           </div>
         </div>
         <div className="carousel-dots">
-          {[0, 1].map(i => (
+          {slides.map((_, i) => (
             <div key={i} className={`cdot${slide === i ? ' active' : ''}`} onClick={() => goSlide(i)} />
           ))}
         </div>

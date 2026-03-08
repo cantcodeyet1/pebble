@@ -27,6 +27,19 @@ function computeStreak(dates: string[]): number {
 }
 
 export type Tier = 'Word' | 'Phrase';
+
+export type SlideData = {
+  tier: Tier;
+  tc: 'tb-word' | 'tb-phrase';
+  word: string;
+  ipa: string;
+  pos: string;
+  register: string;
+  def: string;
+  ex: string;
+  syns: string[];
+  btnLabel: string;
+};
 export type Register = 'Formal' | 'Informal' | 'Literary' | 'Academic' | 'Idiomatic';
 
 export interface Logos {
@@ -55,6 +68,8 @@ interface PebbleStore {
   logoi: Logos[];
   streak: number;
   activityDates: string[];
+  todaySlides: SlideData[] | null;
+  setTodaySlides: (slides: SlideData[]) => void;
   boutOpen: boolean;
   setBoutOpen: (v: boolean) => void;
   addOpen: boolean;
@@ -72,6 +87,8 @@ export const usePebbleStore = create<PebbleStore>((set) => ({
   logoi: [],
   streak: 0,
   activityDates: [],
+  todaySlides: null,
+  setTodaySlides: (slides) => set({ todaySlides: slides }),
   boutOpen: false,
   setBoutOpen: (v) => set({ boutOpen: v }),
   addOpen: false,
