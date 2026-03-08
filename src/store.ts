@@ -57,6 +57,7 @@ export interface Logos {
   masteryLevel: number; // 0 to 5
   nextReviewDate: Date;
   dateAdded: Date;
+  lastDrilledAt?: Date;
   starred?: boolean;
   structuralSplit?: {
     part1: string;

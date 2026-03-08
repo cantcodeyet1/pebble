@@ -311,7 +311,7 @@ export const Palaestra = () => {
     const newLevel   = correct ? Math.min(logos.masteryLevel + 1, 5) : Math.max(logos.masteryLevel - 1, 0);
     const nextReview = addDays(new Date(), Math.pow(2, newLevel)).toISOString();
     updateMastery(logos.id, correct);
-    updateLogos(logos.id, { mastery_level: newLevel, next_review_date: nextReview }).catch(() => {});
+    updateLogos(logos.id, { mastery_level: newLevel, next_review_date: nextReview, last_drilled_at: new Date().toISOString() }).catch(() => {});
   };
 
   const pickAnswer = (idx: number) => {
@@ -391,7 +391,7 @@ export const Palaestra = () => {
         updateMastery(currentQ.logos.id, true);
         const newLevel = Math.min(currentQ.logos.masteryLevel + 1, 5);
         const nextReview = addDays(new Date(), Math.pow(2, newLevel)).toISOString();
-        updateLogos(currentQ.logos.id, { mastery_level: newLevel, next_review_date: nextReview }).catch(() => {});
+        updateLogos(currentQ.logos.id, { mastery_level: newLevel, next_review_date: nextReview, last_drilled_at: new Date().toISOString() }).catch(() => {});
       }
     } catch {
       // silent — leave feedback bar as-is

@@ -26,6 +26,7 @@ function rowToLogos(r: Record<string, unknown>): Logos {
     nextReviewDate:  new Date(r.next_review_date as string),
     dateAdded:       new Date(r.date_added as string),
     starred:         Boolean(r.starred),
+    lastDrilledAt:   r.last_drilled_at ? new Date(r.last_drilled_at as string) : undefined,
   };
 }
 
@@ -86,7 +87,7 @@ export async function getLogoi(): Promise<Logos[]> {
 
 export async function updateLogos(
   id: string,
-  patch: Partial<Pick<LogosRow, 'mastery_level' | 'next_review_date' | 'starred' | 'synced'>>,
+  patch: Partial<Pick<LogosRow, 'mastery_level' | 'next_review_date' | 'starred' | 'synced' | 'last_drilled_at'>>,
 ): Promise<void> {
   const conn = getConn();
   const sets: string[] = [];
@@ -96,6 +97,7 @@ export async function updateLogos(
   if (patch.next_review_date !== undefined) { sets.push('next_review_date = ?'); vals.push(patch.next_review_date); }
   if (patch.starred          !== undefined) { sets.push('starred = ?');          vals.push(patch.starred ? 1 : 0); }
   if (patch.synced           !== undefined) { sets.push('synced = ?');           vals.push(patch.synced  ? 1 : 0); }
+  if (patch.last_drilled_at  !== undefined) { sets.push('last_drilled_at = ?');  vals.push(patch.last_drilled_at); }
 
   sets.push('updated_at = ?');
   vals.push(new Date().toISOString(), id);

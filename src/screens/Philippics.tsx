@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { usePebbleStore, Logos } from '../store';
 import { addDays, startOfDay, startOfWeek, subWeeks } from 'date-fns';
 
-function buildGrid(logoi: Logos[]) {
+function buildGrid(logoi: Logos[], activityDates: string[]) {
+  const activitySet = new Set(activityDates);
   const now = new Date();
   const cells: string[] = [];
   for (let row = 0; row < 7; row++) {
@@ -11,12 +12,15 @@ function buildGrid(logoi: Logos[]) {
       const weekStart = startOfWeek(subWeeks(now, weeksBack), { weekStartsOn: 1 });
       const cellDate = startOfDay(addDays(weekStart, row));
       if (cellDate > now) { cells.push(''); continue; }
+      const dateStr = cellDate.toISOString().slice(0, 10);
       const count = logoi.filter(l => startOfDay(new Date(l.dateAdded)).getTime() === cellDate.getTime()).length;
+      const drilled = activitySet.has(dateStr);
       let cls = '';
-      if (count >= 4)      cls = 'l4';
-      else if (count >= 3) cls = 'l3';
-      else if (count >= 2) cls = 'l2';
-      else if (count >= 1) cls = 'l1';
+      if (count >= 4)           cls = 'l4';
+      else if (count >= 3)      cls = 'l3';
+      else if (count >= 2)      cls = 'l2';
+      else if (count >= 1)      cls = 'l1';
+      else if (drilled)         cls = 'l1';
       cells.push(cls);
     }
   }
@@ -24,13 +28,13 @@ function buildGrid(logoi: Logos[]) {
 }
 
 export const Philippics = () => {
-  const { logoi, streak } = usePebbleStore();
+  const { logoi, streak, activityDates } = usePebbleStore();
 
   const words   = useMemo(() => logoi.filter(l => l.tier === 'Word'),   [logoi]);
   const phrases = useMemo(() => logoi.filter(l => l.tier === 'Phrase'), [logoi]);
 
-  const masteredWords   = words.filter(l => l.masteryLevel === 5).length;
-  const masteredPhrases = phrases.filter(l => l.masteryLevel === 5).length;
+  const masteredWords   = words.filter(l => l.masteryLevel >= 4).length;
+  const masteredPhrases = phrases.filter(l => l.masteryLevel >= 4).length;
   const mastered        = masteredWords + masteredPhrases;
 
   const wordPct   = words.length   > 0 ? Math.round((masteredWords   / words.length)   * 100) : 0;
@@ -41,12 +45,12 @@ export const Philippics = () => {
   const newWords     = newThisWeek.filter(l => l.tier === 'Word').length;
   const newPhrases   = newThisWeek.filter(l => l.tier === 'Phrase').length;
 
-  // Forgotten = mastery level 0 and overdue (failed so often SRS sent them back to start)
-  const forgotten        = useMemo(() => logoi.filter(l => l.masteryLevel === 0 && new Date(l.nextReviewDate) < new Date()), [logoi]);
+  // Forgotten = has been drilled at least once, failed back to mastery 0, and is now overdue
+  const forgotten        = useMemo(() => logoi.filter(l => l.masteryLevel === 0 && !!l.lastDrilledAt && new Date(l.nextReviewDate) < new Date()), [logoi]);
   const forgottenWords   = forgotten.filter(l => l.tier === 'Word').length;
   const forgottenPhrases = forgotten.filter(l => l.tier === 'Phrase').length;
 
-  const gridCells = useMemo(() => buildGrid(logoi), [logoi]);
+  const gridCells = useMemo(() => buildGrid(logoi, activityDates), [logoi, activityDates]);
 
   return (
     <>
