@@ -604,7 +604,12 @@ export const Palaestra = () => {
         {/* ── LOADING OVERLAY ── */}
         {sessionLoading && (
           <div style={{ position: 'absolute', inset: 0, zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, background: 'var(--bg)' }}>
-            <div style={{ width: 36, height: 36, border: '3px solid rgba(212,160,23,.2)', borderTopColor: 'var(--gold)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+            <path
+              d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"
+              style={{ strokeDasharray: 57, animation: 'shieldDraw 2.4s ease-in-out infinite' }}
+            />
+          </svg>
             <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: 'var(--text-dim)', letterSpacing: '.04em' }}>Preparing your session…</div>
           </div>
         )}
