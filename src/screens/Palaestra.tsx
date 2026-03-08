@@ -345,9 +345,11 @@ export const Palaestra = () => {
       setAiFeedback(null);
     } else {
       setBoutDone(true);
-      recordActivity();
-      const today = new Date().toISOString().slice(0, 10);
-      recordActivityDb(today).catch(() => {});
+      if (mode === 'drill') {
+        recordActivity();
+        const today = new Date().toISOString().slice(0, 10);
+        recordActivityDb(today).catch(() => {});
+      }
     }
   };
 

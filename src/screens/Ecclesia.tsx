@@ -47,7 +47,7 @@ export const Ecclesia = () => {
       d.setDate(today.getDate() - monOffset + i);
       const dateStr = d.toISOString().slice(0, 10);
       let state = '';
-      if (dateStr === todayStr) state = 'today';
+      if (dateStr === todayStr) state = activityDates.includes(dateStr) ? 'done' : 'today';
       else if (dateStr < todayStr && activityDates.includes(dateStr)) state = 'done';
       return { lbl, state };
     });
