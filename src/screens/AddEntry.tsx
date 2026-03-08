@@ -20,7 +20,7 @@ export const AddEntry = () => {
   const [register, setRegister] = useState<Register>('');
   const [aiDef, setAiDef] = useState('');
   const [aiEx, setAiEx] = useState('');
-  const [aiSyns, setAiSyns] = useState<string[]>('');
+  const [aiSyns, setAiSyns] = useState<string[]>([]);
   const [aiPos, setAiPos] = useState('');
   const [aiPhonetic, setAiPhonetic] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
@@ -50,11 +50,11 @@ export const AddEntry = () => {
         const logos = await classify(text, contextSentence || undefined);
         setTier(logos.tier as Tier);
         setRegister(logos.register as Register);
-        setAiDef(logos.definition);
-        setAiEx(logos.sentence);
-        setAiSyns(logos.synonyms);
-        setAiPos(logos.pos);
-        setAiPhonetic(logos.phonetic);
+        setAiDef(logos.definition ?? '');
+        setAiEx(logos.sentence ?? '');
+        setAiSyns(logos.synonyms ?? []);
+        setAiPos(logos.pos ?? '');
+        setAiPhonetic(logos.phonetic ?? '');
       } catch (error) {
         console.log(error);
       } finally {
@@ -69,18 +69,18 @@ export const AddEntry = () => {
   const handleSave = async () => {
     if (!text) return;
     const entry = text;
-    const definition = aiDef.replace(/^"|"$/g, "");
-    const exampleSentence = aiEx.replace(/^"|"$/g, "");
+    const definition = (aiDef || '').replace(/^"|"$/g, "");
+    const exampleSentence = (aiEx || '').replace(/^"|"$/g, "");
 
     try {
       const saved = await dbAddLogos({
         entry,
-        tier: tier.toLowerCase(),
+        tier: (tier || '').toLowerCase(),
         definition,
         example: exampleSentence,
         source: source || null,
         contextSentence: contextSentence || null,
-        register: register.toLowerCase(),
+        register: (register || '').toLowerCase(),
         phonetic: aiPhonetic,
         pos: aiPos,
         synonyms: aiSyns,
