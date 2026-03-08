@@ -1,7 +1,11 @@
 import { createClient } from '@libsql/client'
 import { drizzle } from 'drizzle-orm/libsql'
 
-const isNative = typeof (window as any).Capacitor !== 'undefined'
+const isNative = (
+  (!!(window as any).Capacitor?.isNativePlatform?.()) ||
+  window.location.protocol === 'capacitor:' ||
+  window.location.protocol === 'ionic:'
+)
 
 const client = createClient(
   isNative
@@ -22,9 +26,9 @@ export async function initDb(): Promise<void> {
   }
 }
 
-export function getConn () {
+export function getConn() {
   return {
-    async run (
+    async run(
       sql: string,
       params: unknown[] = []
     ): Promise<{ changes: number }> {
@@ -34,7 +38,7 @@ export function getConn () {
       })
       return { changes: result.rowsAffected }
     },
-    async query (
+    async query(
       sql: string,
       params: unknown[] = []
     ): Promise<{ values: Record<string, unknown>[] }> {
