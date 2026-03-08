@@ -24,6 +24,7 @@ export const AddEntry = () => {
   const [aiPos, setAiPos] = useState('');
   const [aiPhonetic, setAiPhonetic] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
+  const [offline, setOffline] = useState(false);
 
   // Reset state when sheet opens
   useEffect(() => {
@@ -39,11 +40,13 @@ export const AddEntry = () => {
       setAiPos('');
       setAiPhonetic('');
       setAnalyzing(false);
+      setOffline(false);
     }
   }, [addOpen]);
 
   useEffect(() => {
     if (text.length < 3) return;
+    setOffline(false);
     const t = setTimeout(async () => {
       setAnalyzing(true);
       try {
@@ -56,7 +59,13 @@ export const AddEntry = () => {
         setAiPos(logos.pos ?? '');
         setAiPhonetic(logos.phonetic ?? '');
       } catch (error) {
-        console.log(error);
+        const isNetworkError = !navigator.onLine
+          || (error instanceof TypeError && /fetch|network|failed/i.test((error as Error).message));
+        if (isNetworkError) {
+          setOffline(true);
+        } else {
+          console.log(error);
+        }
       } finally {
         setAnalyzing(false);
       }
@@ -75,7 +84,19 @@ export const AddEntry = () => {
     const exampleSentence = (aiEx || '').replace(/^"|"$/g, "");
 
     try {
-      const saved = await dbAddLogos({
+      const saved = await dbAddLogos(offline ? {
+        entry,
+        tier: '',
+        definition: '',
+        example: '',
+        source: source || null,
+        contextSentence: contextSentence || null,
+        register: '',
+        phonetic: '',
+        pos: '',
+        synonyms: [],
+        enriched: false,
+      } : {
         entry,
         tier: (tier || '').toLowerCase(),
         definition,
@@ -86,6 +107,7 @@ export const AddEntry = () => {
         phonetic: aiPhonetic,
         pos: aiPos,
         synonyms: aiSyns,
+        enriched: true,
       });
       appendLogos(saved);
     } catch (err) {
@@ -154,8 +176,26 @@ export const AddEntry = () => {
           />
         </div>
 
-        {/* AI card — always visible */}
-        <div className="ai-card-add">
+        {/* Offline notice */}
+        {offline && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '10px 13px', borderRadius: 8,
+            background: 'rgba(251,191,36,.08)',
+            border: '1px solid rgba(251,191,36,.22)',
+            color: '#fbbf24', fontSize: 12,
+            fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            No connection — word will be classified when you reconnect
+          </div>
+        )}
+
+        {/* AI card — hidden when offline */}
+        {!offline && <div className="ai-card-add">
           <div className="ai-hdr">
             <div className="ai-pulse" />
             <div className="ai-lbl">{analyzing ? "Analysing…" : "AI Classification"}</div>
@@ -235,7 +275,7 @@ export const AddEntry = () => {
               </div>
             </>
           )}
-        </div>
+        </div>}
       </div>
     </div>
   );

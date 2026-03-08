@@ -58,6 +58,7 @@ export interface Logos {
   nextReviewDate: Date;
   dateAdded: Date;
   lastDrilledAt?: Date;
+  enriched?: boolean;
   starred?: boolean;
   structuralSplit?: {
     part1: string;

@@ -19,6 +19,7 @@ export const logoiTable = sqliteTable('logoi', {
   synced:           integer('synced',   { mode: 'boolean' }).notNull().default(false),
   updated_at:       text('updated_at').notNull(),
   last_drilled_at:  text('last_drilled_at'),
+  enriched:         integer('enriched', { mode: 'boolean' }).default(false),
 });
 
 export type LogosRow    = typeof logoiTable.$inferSelect;

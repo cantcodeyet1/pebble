@@ -27,6 +27,7 @@ function rowToLogos(r: Record<string, unknown>): Logos {
     dateAdded:       new Date(r.date_added as string),
     starred:         Boolean(r.starred),
     lastDrilledAt:   r.last_drilled_at ? new Date(r.last_drilled_at as string) : undefined,
+    enriched:        r.enriched !== null && r.enriched !== undefined ? Boolean(r.enriched) : undefined,
   };
 }
 
@@ -43,6 +44,7 @@ export type AddLogosInput = {
   phonetic?:       string;
   pos?:            string;
   synonyms?:       string[];
+  enriched?:       boolean;
 };
 
 export async function addLogos(input: AddLogosInput): Promise<Logos> {
@@ -61,12 +63,12 @@ export async function addLogos(input: AddLogosInput): Promise<Logos> {
     `INSERT INTO logoi
        (id, entry, tier, definition, example, source, context_sentence, register,
         phonetic, pos, synonyms,
-        mastery_level, next_review_date, date_added, starred, synced, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, 0, ?)`,
+        mastery_level, next_review_date, date_added, starred, synced, updated_at, enriched)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, 0, ?, ?)`,
     [id, input.entry, tier, input.definition, input.example,
      input.source ?? null, input.contextSentence ?? null,
      register, phonetic, pos, synonyms,
-     nextReview, now, now],
+     nextReview, now, now, input.enriched ? 1 : 0],
   );
 
   return rowToLogos({
@@ -134,4 +136,16 @@ export async function getByRegister(register: string): Promise<Logos[]> {
     [register.toLowerCase()],
   );
   return (result.values ?? []).map(rowToLogos);
+}
+
+export async function enrichLogos(
+  id: string,
+  data: { tier: string; definition: string; example: string; register: string; phonetic: string; pos: string; synonyms: string[] },
+): Promise<void> {
+  const conn = getConn();
+  await conn.run(
+    `UPDATE logoi SET tier=?, definition=?, example=?, register=?, phonetic=?, pos=?, synonyms=?, enriched=1, updated_at=? WHERE id=?`,
+    [data.tier, data.definition, data.example, data.register, data.phonetic, data.pos,
+     JSON.stringify(data.synonyms), new Date().toISOString(), id],
+  );
 }
