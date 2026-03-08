@@ -308,15 +308,28 @@ export const Callistratum = () => {
               </div>
             )}
 
-            {selectedLogos.sourceSentence && (
+            {selectedLogos.contextSentence && (
               <div className="dc-sec">
                 <div className="dc-sh">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                    <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
+                    <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/>
+                  </svg>
+                  Context
+                </div>
+                <div className="dc-st" style={{ fontStyle: 'italic' }}>{selectedLogos.contextSentence}</div>
+              </div>
+            )}
+
+            {selectedLogos.source && (
+              <div className="dc-sec">
+                <div className="dc-sh">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>
                   </svg>
                   Source
                 </div>
-                <div className="dc-st">{selectedLogos.sourceSentence}</div>
+                <div className="dc-st">{selectedLogos.source}</div>
               </div>
             )}
 

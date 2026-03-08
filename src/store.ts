@@ -48,7 +48,8 @@ export interface Logos {
   tier: Tier;
   definition: string;
   exampleSentence: string;
-  sourceSentence?: string;
+  contextSentence?: string;
+  source?: string;
   register: Register;
   phonetic?: string;
   pos?: string;

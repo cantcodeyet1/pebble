@@ -16,7 +16,8 @@ function rowToLogos(r: Record<string, unknown>): Logos {
     tier:            capitalize<Tier>(r.tier as string),
     definition:      r.definition as string,
     exampleSentence: r.example as string,
-    sourceSentence:  r.source ? (r.source as string) : undefined,
+    contextSentence: r.context_sentence ? (r.context_sentence as string) : undefined,
+    source:          r.source ? (r.source as string) : undefined,
     register:        capitalize<Register>(r.register as string),
     phonetic:        (r.phonetic as string) || undefined,
     pos:             (r.pos as string) || undefined,
@@ -31,15 +32,16 @@ function rowToLogos(r: Record<string, unknown>): Logos {
 // ---------- CRUD ----------
 
 export type AddLogosInput = {
-  entry:       string;
-  tier:        string;   // capitalised or lowercase — normalised internally
-  definition:  string;
-  example:     string;
-  source?:     string | null;
-  register:    string;
-  phonetic?:   string;
-  pos?:        string;
-  synonyms?:   string[];
+  entry:           string;
+  tier:            string;   // capitalised or lowercase — normalised internally
+  definition:      string;
+  example:         string;
+  source?:         string | null;
+  contextSentence?: string | null;
+  register:        string;
+  phonetic?:       string;
+  pos?:            string;
+  synonyms?:       string[];
 };
 
 export async function addLogos(input: AddLogosInput): Promise<Logos> {
@@ -56,18 +58,20 @@ export async function addLogos(input: AddLogosInput): Promise<Logos> {
 
   await conn.run(
     `INSERT INTO logoi
-       (id, entry, tier, definition, example, source, register,
+       (id, entry, tier, definition, example, source, context_sentence, register,
         phonetic, pos, synonyms,
         mastery_level, next_review_date, date_added, starred, synced, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, 0, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 0, 0, ?)`,
     [id, input.entry, tier, input.definition, input.example,
-     input.source ?? null, register, phonetic, pos, synonyms,
+     input.source ?? null, input.contextSentence ?? null,
+     register, phonetic, pos, synonyms,
      nextReview, now, now],
   );
 
   return rowToLogos({
     id, entry: input.entry, tier, definition: input.definition,
-    example: input.example, source: input.source ?? null, register,
+    example: input.example, source: input.source ?? null,
+    context_sentence: input.contextSentence ?? null, register,
     phonetic, pos, synonyms,
     mastery_level: 0, next_review_date: nextReview, date_added: now,
     starred: 0, synced: 0, updated_at: now,

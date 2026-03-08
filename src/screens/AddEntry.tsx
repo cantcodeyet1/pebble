@@ -14,6 +14,7 @@ export const AddEntry = () => {
   const appendLogos = usePebbleStore((s) => s.appendLogos);
 
   const [text, setText] = useState("");
+  const [contextSentence, setContextSentence] = useState("");
   const [source, setSource] = useState("");
   const [tier, setTier] = useState<Tier>('');
   const [register, setRegister] = useState<Register>('');
@@ -28,7 +29,13 @@ export const AddEntry = () => {
   useEffect(() => {
     if (addOpen) {
       setText("");
+      setContextSentence("");
       setSource("");
+      setTier('');
+      setRegister('');
+      setAiDef('');
+      setAiEx('');
+      setAiSyns([]);
       setAiPos('');
       setAiPhonetic('');
       setAnalyzing(false);
@@ -36,27 +43,26 @@ export const AddEntry = () => {
   }, [addOpen]);
 
   useEffect(() => {
-    if (text.length > 3) {
-      const t = setTimeout(async () => {
-        setAnalyzing(true);
-        try {
-          const logos = await classify(text);
-          setTier(logos.tier as Tier);
-          setRegister(logos.register as Register);
-          setAiDef(logos.definition);
-          setAiEx(logos.sentence);
-          setAiSyns(logos.synonyms);
-          setAiPos(logos.pos);
-          setAiPhonetic(logos.phonetic);
-        } catch (error) {
-          console.log(error);
-        } finally {
-          setAnalyzing(false);
-        }
-      }, 900);
-      return () => clearTimeout(t);
-    }
-  }, [text]);
+    if (text.length < 3) return;
+    const t = setTimeout(async () => {
+      setAnalyzing(true);
+      try {
+        const logos = await classify(text, contextSentence || undefined);
+        setTier(logos.tier as Tier);
+        setRegister(logos.register as Register);
+        setAiDef(logos.definition);
+        setAiEx(logos.sentence);
+        setAiSyns(logos.synonyms);
+        setAiPos(logos.pos);
+        setAiPhonetic(logos.phonetic);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setAnalyzing(false);
+      }
+    }, 900);
+    return () => clearTimeout(t);
+  }, [text, contextSentence]);
 
   const close = () => setAddOpen(false);
 
@@ -67,13 +73,13 @@ export const AddEntry = () => {
     const exampleSentence = aiEx.replace(/^"|"$/g, "");
 
     try {
-      // Persist to SQLite; returned Logos is already mapped to store shape
       const saved = await dbAddLogos({
         entry,
         tier: tier.toLowerCase(),
         definition,
         example: exampleSentence,
         source: source || null,
+        contextSentence: contextSentence || null,
         register: register.toLowerCase(),
         phonetic: aiPhonetic,
         pos: aiPos,
@@ -81,9 +87,8 @@ export const AddEntry = () => {
       });
       appendLogos(saved);
     } catch (err) {
-      // DB unavailable (e.g. cold dev start) — fall back to in-memory only
       console.warn("[Pebble] DB write failed — in-memory only:", err);
-      addLogos({ text: entry, tier, definition, exampleSentence, sourceSentence: source || undefined, register });
+      addLogos({ text: entry, tier, definition, exampleSentence, contextSentence: contextSentence || undefined, source: source || undefined, register });
     }
 
     close();
@@ -127,10 +132,21 @@ export const AddEntry = () => {
         />
 
         <div>
-          <div className="field-lbl">Source Context (Optional)</div>
+          <div className="field-lbl">Context Sentence <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(Optional)</span></div>
           <textarea
             className="src-txt"
-            placeholder="Where did you encounter this?"
+            placeholder="The sentence where you encountered this word or phrase…"
+            value={contextSentence}
+            onChange={(e) => setContextSentence(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <div className="field-lbl">Source <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(Optional)</span></div>
+          <input
+            className="lmi"
+            style={{ marginTop: 0 }}
+            placeholder="e.g. Crime and Punishment, Churchill…"
             value={source}
             onChange={(e) => setSource(e.target.value)}
           />

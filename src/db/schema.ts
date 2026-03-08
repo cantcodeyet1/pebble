@@ -7,6 +7,7 @@ export const logoiTable = sqliteTable('logoi', {
   definition:       text('definition').notNull(),
   example:          text('example').notNull(),
   source:           text('source'),
+  context_sentence: text('context_sentence'),
   register:         text('register').notNull(),
   phonetic:         text('phonetic').notNull().default(''),
   pos:              text('pos').notNull().default(''),

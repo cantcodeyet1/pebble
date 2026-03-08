@@ -16,7 +16,7 @@ export type ClassifyResult = {
   sentence: string
 }
 
-export async function classify (entry: string): Promise<ClassifyResult> {
+export async function classify(entry: string, contextSentence?: string): Promise<ClassifyResult> {
   const response = await groq.chat.completions.create({
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: [
@@ -36,11 +36,22 @@ export async function classify (entry: string): Promise<ClassifyResult> {
           '"definition" (a concise definition in sentence case), ' +
           '"synonyms" (a JSON array of related words or phrases in title case e.g. ["Fleeting", "Transient"] for words, ["Get Off To A Flying Start"] for phrases), ' +
           '"sentence" (a natural example sentence using the input in context, in sentence case). ' +
+          (contextSentence
+            ? 'A context sentence is provided showing exactly how the learner encountered this word. ' +
+              'Identify the precise sense, register, tone, and nuance of the word as used in that sentence. ' +
+              'Every output field must reflect that specific usage: ' +
+              '"definition" must define only this sense, not a generic or alternative meaning; ' +
+              '"synonyms" must be words or phrases that are interchangeable in this specific sense and register; ' +
+              '"sentence" must be a freshly composed example — never copy or paraphrase the context sentence — but must illustrate the same sense and register; ' +
+              '"register" must match the tone of the context. '
+            : '') +
           'Respond with valid JSON only. No markdown, no preamble.'
       },
       {
         role: 'user',
-        content: entry
+        content: contextSentence
+          ? `Entry: "${entry}"\nContext sentence: "${contextSentence}"`
+          : entry,
       }
     ],
     response_format: { type: 'json_object' }

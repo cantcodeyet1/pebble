@@ -870,8 +870,11 @@ body::before {
   width: 100%;
   outline: none;
   resize: none;
-  height: 58px;
+  overflow: hidden;
+  min-height: 58px;
   line-height: 1.5;
+  box-sizing: border-box;
+  field-sizing: content;
 }
 .src-txt::placeholder { color: var(--text-dim); }
 .reg-row  { display: flex; gap: 7px; flex-wrap: wrap; }

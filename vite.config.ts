@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS logoi (
   definition       TEXT NOT NULL,
   example          TEXT NOT NULL,
   source           TEXT,
+  context_sentence TEXT,
   register         TEXT NOT NULL,
   phonetic         TEXT NOT NULL DEFAULT '',
   pos              TEXT NOT NULL DEFAULT '',
@@ -40,9 +41,10 @@ CREATE TABLE IF NOT EXISTS wotd_log (
 )`;
 
 const MIGRATIONS = [
-  `ALTER TABLE logoi ADD COLUMN phonetic TEXT NOT NULL DEFAULT ''`,
-  `ALTER TABLE logoi ADD COLUMN pos      TEXT NOT NULL DEFAULT ''`,
-  `ALTER TABLE logoi ADD COLUMN synonyms TEXT NOT NULL DEFAULT '[]'`,
+  `ALTER TABLE logoi ADD COLUMN phonetic         TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE logoi ADD COLUMN pos              TEXT NOT NULL DEFAULT ''`,
+  `ALTER TABLE logoi ADD COLUMN synonyms         TEXT NOT NULL DEFAULT '[]'`,
+  `ALTER TABLE logoi ADD COLUMN context_sentence TEXT`,
 ];
 
 function parseBody(req: any): Promise<any> {
