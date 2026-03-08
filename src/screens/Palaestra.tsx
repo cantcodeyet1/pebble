@@ -439,40 +439,47 @@ export const Palaestra = () => {
 
   // ── filter & style option definitions ────────────────────────────────────
 
-  const filterOpts: { id: Filter; icon: React.ReactNode; name: string; sub: string }[] = [
+  const filterOpts: { id: Filter; icon: React.ReactNode; name: string; sub: string; count: number }[] = [
     {
       id: 'starred', name: 'Starred Words',
       sub: `${logoi.filter(l => l.starred).length} logoi starred`,
+      count: logoi.filter(l => l.starred).length,
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--gold)" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
     },
     {
       id: 'new', name: 'New',
       sub: `Untrained · ${logoi.filter(l => l.masteryLevel === 0).length} logoi`,
+      count: logoi.filter(l => l.masteryLevel === 0).length,
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>,
     },
     {
       id: 'weak', name: 'Weakly Known',
       sub: `Mastery 0–2 · ${logoi.filter(l => l.masteryLevel <= 2).length} logoi`,
+      count: logoi.filter(l => l.masteryLevel <= 2).length,
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>,
     },
     {
       id: 'mild', name: 'Mildly Known',
       sub: `Mastery 3 · ${logoi.filter(l => l.masteryLevel === 3).length} logoi`,
+      count: logoi.filter(l => l.masteryLevel === 3).length,
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
     },
     {
       id: 'strong', name: 'Strong Knowledge',
       sub: `Mastery 4–5 · ${logoi.filter(l => l.masteryLevel >= 4).length} logoi`,
+      count: logoi.filter(l => l.masteryLevel >= 4).length,
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
     },
     {
       id: 'register', name: 'By Register',
       sub: 'Academic · Literary · Formal…',
+      count: logoi.length,
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
     },
     {
       id: 'random', name: 'Random',
       sub: `Surprise selection · 15 logoi`,
+      count: logoi.length,
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="8" cy="8" r="1.2" fill="var(--gold-dim)"/><circle cx="16" cy="8" r="1.2" fill="var(--gold-dim)"/><circle cx="8" cy="16" r="1.2" fill="var(--gold-dim)"/><circle cx="16" cy="16" r="1.2" fill="var(--gold-dim)"/><circle cx="12" cy="12" r="1.2" fill="var(--gold-dim)"/></svg>,
     },
   ];
@@ -571,16 +578,24 @@ export const Palaestra = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {filterOpts.map(f => (
-                <div key={f.id} className={`filter-row-item${filter === f.id ? ' sel' : ''}`} onClick={() => setFilter(f.id)}>
-                  <div className="fri-icon">{f.icon}</div>
-                  <div className="fri-body">
-                    <div className="fri-name">{f.name}</div>
-                    <div className="fri-sub">{f.sub}</div>
+              {filterOpts.map(f => {
+                const disabled = f.count === 0;
+                return (
+                  <div
+                    key={f.id}
+                    className={`filter-row-item${filter === f.id ? ' sel' : ''}`}
+                    onClick={disabled ? undefined : () => setFilter(f.id)}
+                    style={disabled ? { opacity: 0.3, cursor: 'default', pointerEvents: 'none' } : undefined}
+                  >
+                    <div className="fri-icon">{f.icon}</div>
+                    <div className="fri-body">
+                      <div className="fri-name">{f.name}</div>
+                      <div className="fri-sub">{f.sub}</div>
+                    </div>
+                    <div className="fri-check">{filter === f.id && <CheckMark />}</div>
                   </div>
-                  <div className="fri-check">{filter === f.id && <CheckMark />}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {filter === 'register' && (
@@ -636,8 +651,13 @@ export const Palaestra = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {tierCards.map(t => (
-                <div key={t.id} className={`tier-type-card${tierFilter === t.id ? ' sel' : ''}`} onClick={() => setTierFilter(t.id)}>
+              {tierCards.map(t => {
+                const disabled = t.count === 0;
+                return (
+                <div key={t.id} className={`tier-type-card${tierFilter === t.id ? ' sel' : ''}`}
+                  onClick={disabled ? undefined : () => setTierFilter(t.id)}
+                  style={disabled ? { opacity: 0.3, cursor: 'default', pointerEvents: 'none' } : undefined}
+                >
                   <div className="ttc-header">
                     <div>
                       {t.badge && <span className={`tier-badge ${t.badge}`} style={{ marginBottom: 6, display: 'inline-block' }}>{t.id === 'word' ? 'Word' : 'Phrase'}</span>}
@@ -650,7 +670,8 @@ export const Palaestra = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <button className="pal-enter-btn" onClick={() => palGo(3)}>Next →</button>
