@@ -41,10 +41,27 @@ function shuffle<T>(arr: T[]): T[] {
 function pickQType(style: TrainingStyle, logos: Logos): QuestionType {
   if (style !== 'mixed') return style as QuestionType;
   const hasSyns = !!(logos.synonyms?.length);
-  const opts: QuestionType[] = logos.masteryLevel <= 2
-    ? ['blank', 'usage']
-    : hasSyns ? ['blank', 'synonym', 'usage'] : ['blank', 'usage'];
+  const opts: QuestionType[] = ['blank', 'usage'];
+  if (hasSyns) opts.push('synonym');
+  if (logos.masteryLevel >= 1) opts.push('write');
   return opts[Math.floor(Math.random() * opts.length)];
+}
+
+/** For a whole session in mixed mode, build a balanced type list so every
+ *  style appears roughly equally rather than clustering by chance. */
+function assignMixedTypes(pool: Logos[]): QuestionType[] {
+  const base: QuestionType[] = ['blank', 'synonym', 'usage', 'write'];
+  const assignments: QuestionType[] = [];
+  while (assignments.length < pool.length) {
+    assignments.push(...shuffle([...base]));
+  }
+  return pool.map((l, i) => {
+    let t = assignments[i];
+    const hasSyns = !!(l.synonyms?.length);
+    if (t === 'synonym' && !hasSyns) t = 'blank';
+    if (t === 'write' && l.masteryLevel < 1) t = 'usage';
+    return t;
+  });
 }
 
 function buildQuestion(logos: Logos, qType: QuestionType, all: Logos[], content?: SessionContent): BoutQuestion {
@@ -288,8 +305,9 @@ export const Palaestra = () => {
 
     let questions: BoutQuestion[];
     if (trainingStyle === 'mixed') {
-      // One varied question type per logos — not all types for every word
-      questions = shuffle(pool.map(l => buildQuestion(l, pickQType('mixed', l), logoi, contentMap.get(l.id))));
+      const shuffledPool = shuffle(pool);
+      const types = assignMixedTypes(shuffledPool);
+      questions = shuffledPool.map((l, i) => buildQuestion(l, types[i], logoi, contentMap.get(l.id)));
     } else {
       questions = shuffle(pool).map(l => buildQuestion(l, trainingStyle as QuestionType, logoi, contentMap.get(l.id)));
     }
