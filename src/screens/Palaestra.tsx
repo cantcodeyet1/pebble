@@ -7,7 +7,7 @@ import { addDays } from 'date-fns';
 import { evaluateSentence, generateSessionContent, SessionContent } from '../services/ai.service';
 
 type Mode = 'drill' | 'agora';
-type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'new' | 'register' | 'manual';
+type Filter = 'starred' | 'weak' | 'mild' | 'strong' | 'new' | 'register' | 'manual' | 'random';
 type TierFilter = 'all' | 'word' | 'phrase';
 type TrainingStyle = 'mixed' | 'blank' | 'synonym' | 'usage' | 'write';
 type QuestionType = 'blank' | 'synonym' | 'usage' | 'write';
@@ -72,10 +72,14 @@ function buildQuestion(logos: Logos, qType: QuestionType, all: Logos[], content?
 
   if (qType === 'blank') {
     let blanked: string;
-    if (content?.blankSentence) {
-      blanked = content.blankSentence.replace(/BLANK/g, '______');
+    const esc = logos.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const aiSentence = content?.blankSentence ?? '';
+    // Reject AI sentence if BLANK is missing or only appears at the very end
+    const blankPos = aiSentence.toUpperCase().indexOf('BLANK');
+    const validAI = blankPos !== -1 && blankPos < aiSentence.trimEnd().length - 5;
+    if (validAI) {
+      blanked = aiSentence.replace(/BLANK/gi, '______');
     } else {
-      const esc = logos.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       blanked = logos.exampleSentence.replace(new RegExp(esc, 'gi'), '______');
     }
     const wrongs = pool.slice(0, 3).map(d => d.text);
@@ -164,6 +168,7 @@ export const Palaestra = () => {
   const [trainingStyle, setTrainingStyle]     = useState<TrainingStyle>('mixed');
   const [selectedRegisters, setSelectedRegisters] = useState<string[]>([]);
   const [manualSelection, setManualSelection]     = useState<Set<string>>(new Set(locState.manualIds ?? []));
+  const [randomIds, setRandomIds]                 = useState<string[]>([]);
 
   // Bout state
   const [boutQuestions, setBoutQuestions]   = useState<BoutQuestion[]>([]);
@@ -200,14 +205,24 @@ export const Palaestra = () => {
     if (filter === 'manual') return manualSelection.size > 0
       ? r.filter(l => manualSelection.has(l.id))
       : r;
+    if (filter === 'random') return randomIds.length > 0
+      ? r.filter(l => randomIds.includes(l.id))
+      : r;
     return r;
-  }, [logoi, mode, filter, selectedRegisters, manualSelection]);
+  }, [logoi, mode, filter, selectedRegisters, manualSelection, randomIds]);
 
   const filteredByTier = useMemo(() => {
     if (tierFilter === 'word')   return filteredByMode.filter(l => l.tier === 'Word');
     if (tierFilter === 'phrase') return filteredByMode.filter(l => l.tier === 'Phrase');
     return filteredByMode;
   }, [filteredByMode, tierFilter]);
+
+  // Re-roll random selection whenever the filter switches to 'random'
+  useEffect(() => {
+    if (filter === 'random') {
+      setRandomIds(shuffle(logoi.map(l => l.id)).slice(0, 15));
+    }
+  }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── navigation ────────────────────────────────────────────────────────────
 
@@ -232,6 +247,8 @@ export const Palaestra = () => {
         pool = pool.filter(l => selectedRegisters.includes(l.register.toLowerCase()));
       else if (filter === 'manual' && manualSelection.size > 0)
         pool = pool.filter(l => manualSelection.has(l.id));
+      else if (filter === 'random' && randomIds.length > 0)
+        pool = pool.filter(l => randomIds.includes(l.id));
     }
     if (tierFilter === 'word')   pool = pool.filter(l => l.tier === 'Word');
     if (tierFilter === 'phrase') pool = pool.filter(l => l.tier === 'Phrase');
@@ -402,6 +419,11 @@ export const Palaestra = () => {
       sub: 'Academic · Literary · Formal…',
       icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>,
     },
+    {
+      id: 'random', name: 'Random',
+      sub: `Surprise selection · 15 logoi`,
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold-dim)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><circle cx="8" cy="8" r="1.2" fill="var(--gold-dim)"/><circle cx="16" cy="8" r="1.2" fill="var(--gold-dim)"/><circle cx="8" cy="16" r="1.2" fill="var(--gold-dim)"/><circle cx="16" cy="16" r="1.2" fill="var(--gold-dim)"/><circle cx="12" cy="12" r="1.2" fill="var(--gold-dim)"/></svg>,
+    },
   ];
 
   const styleOpts: { id: TrainingStyle; icon: React.ReactNode; name: string; desc: string }[] = [
@@ -534,6 +556,18 @@ export const Palaestra = () => {
                     {filteredByMode.length} logoi match
                   </div>
                 )}
+              </div>
+            )}
+
+            {filter === 'random' && randomIds.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{randomIds.length} logoi selected</span>
+                <button
+                  className="f-chip active"
+                  onClick={() => setRandomIds(shuffle(logoi.map(l => l.id)).slice(0, 15))}
+                >
+                  Re-roll
+                </button>
               </div>
             )}
 

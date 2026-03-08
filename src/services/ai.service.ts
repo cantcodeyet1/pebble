@@ -74,7 +74,7 @@ export async function generateSessionContent(
           'Required fields: ' +
           '"usageCorrect" — one natural, correct sentence using the word in a fresh scenario (sentence case, must contain the word). ' +
           '"usageWrongs" — array of exactly 3 sentences that misuse the word subtly (wrong register, wrong collocation, grammatically wrong placement); each must contain the word; sentence case. ' +
-          '"blankSentence" — a natural sentence using the word correctly; replace the word with the literal string BLANK, e.g. "The BLANK beauty of the moment stayed with her." ' +
+          '"blankSentence" — a natural sentence using the word correctly; the word MUST be replaced IN PLACE (inside the sentence, never at the end) with the literal token BLANK, e.g. "The BLANK beauty of the moment stayed with her." not "The beauty of the moment stayed with her. BLANK". ' +
           (hasSynonyms
             ? '"synonymCorrect" — the single best synonym or near-equivalent, title case. ' +
               '"synonymWrongs" — array of exactly 3 plausible but incorrect synonyms (different meaning, connotation, or register), title case. '
