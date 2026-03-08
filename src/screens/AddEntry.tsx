@@ -66,6 +66,8 @@ export const AddEntry = () => {
 
   const close = () => setAddOpen(false);
 
+  const aiLocked = !analyzing && !!tier && !!register;
+
   const handleSave = async () => {
     if (!text) return;
     const entry = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
@@ -202,7 +204,7 @@ export const AddEntry = () => {
             <>
               <div className="ai-tr">
                 {tiers.map((t) => (
-                  <button key={t} className={`ai-to${tier === t ? " sel" : ""}`} onClick={() => setTier(t)}>
+                  <button key={t} className={`ai-to${tier === t ? " sel" : ""}`} onClick={() => setTier(t)} disabled={aiLocked && tier !== t}>
                     {t}
                   </button>
                 ))}
@@ -214,6 +216,7 @@ export const AddEntry = () => {
                     key={r}
                     className={`reg-opt${register === r ? " active" : ""}`}
                     onClick={() => setRegister(r)}
+                    disabled={aiLocked && register !== r}
                   >
                     {r}
                   </button>
