@@ -68,7 +68,7 @@ export const AddEntry = () => {
 
   const handleSave = async () => {
     if (!text) return;
-    const entry = text;
+    const entry = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
     const definition = (aiDef || '').replace(/^"|"$/g, "");
     const exampleSentence = (aiEx || '').replace(/^"|"$/g, "");
 

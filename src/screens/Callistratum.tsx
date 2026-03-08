@@ -4,6 +4,11 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { updateLogos, deleteLogos } from '../db/logoi';
 
+function toSentenceCase(str: string): string {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
 function masteryClass(level: number): string {
   if (level === 0) return '';
   if (level === 1) return 'ml';
@@ -193,7 +198,7 @@ export const Callistratum = () => {
               >
                 <div style={{ flex: 1 }}>
                   <div className="li-name">
-                    {logos.text}
+                    {toSentenceCase(logos.text)}
                     <span className={`tier-badge ${tierClass(logos.tier)}`} style={{ fontSize: 8 }}>{logos.tier}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -228,7 +233,7 @@ export const Callistratum = () => {
             onClick={e => e.stopPropagation()}
           >
             <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 600, fontStyle: 'italic', color: 'var(--text)', marginBottom: 4 }}>
-              {confirmLogos.text}
+              {toSentenceCase(confirmLogos.text)}
             </div>
             <div style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--gold-dim)', marginBottom: 16 }}>
               Remove from library
@@ -258,7 +263,7 @@ export const Callistratum = () => {
           <div className="det-card">
             <button className="dc-x" onClick={() => setSelectedLogos(null)}>✕</button>
             <div className="dc-top">Logos Detail</div>
-            <div className="dc-word">{selectedLogos.text}</div>
+            <div className="dc-word">{toSentenceCase(selectedLogos.text)}</div>
 
             {(selectedLogos.phonetic || selectedLogos.pos) && (
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
