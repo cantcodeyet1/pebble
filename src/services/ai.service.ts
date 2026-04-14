@@ -1,4 +1,5 @@
 import Groq from 'groq-sdk'
+import { WotdEntry } from '../db/wotd'
 
 const groq = new Groq({
   apiKey: import.meta.env.VITE_GROQ_API_KEY,
@@ -16,7 +17,10 @@ export type ClassifyResult = {
   sentence: string
 }
 
-export async function classify(entry: string, contextSentence?: string): Promise<ClassifyResult> {
+export async function classify (
+  entry: string,
+  contextSentence?: string
+): Promise<ClassifyResult> {
   const response = await groq.chat.completions.create({
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: [
@@ -51,7 +55,7 @@ export async function classify(entry: string, contextSentence?: string): Promise
         role: 'user',
         content: contextSentence
           ? `Entry: "${entry}"\nContext sentence: "${contextSentence}"`
-          : entry,
+          : entry
       }
     ],
     response_format: { type: 'json_object' }
@@ -62,18 +66,18 @@ export async function classify(entry: string, contextSentence?: string): Promise
 }
 
 export type SessionContent = {
-  usageCorrect: string;
-  usageWrongs: [string, string, string];
-  blankSentence: string;       // contains "BLANK" as placeholder
-  synonymCorrect?: string;
-  synonymWrongs?: [string, string, string];
+  usageCorrect: string
+  usageWrongs: [string, string, string]
+  blankSentence: string // contains "BLANK" as placeholder
+  synonymCorrect?: string
+  synonymWrongs?: [string, string, string]
 }
 
-export async function generateSessionContent(
+export async function generateSessionContent (
   entry: string,
   definition: string,
   hasSynonyms: boolean,
-  distractors: string[],
+  distractors: string[]
 ): Promise<SessionContent> {
   const response = await groq.chat.completions.create({
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
@@ -96,26 +100,41 @@ export async function generateSessionContent(
         role: 'user',
         content:
           `Word: "${entry}"\nDefinition: "${definition}"` +
-          (distractors.length ? `\nOther session words (for context only): ${distractors.slice(0, 5).join(', ')}` : ''),
-      },
+          (distractors.length
+            ? `\nOther session words (for context only): ${distractors
+                .slice(0, 5)
+                .join(', ')}`
+            : '')
+      }
     ],
-    response_format: { type: 'json_object' },
-  });
-  return JSON.parse(response.choices[0].message.content || '{}') as SessionContent;
+    response_format: { type: 'json_object' }
+  })
+  return JSON.parse(
+    response.choices[0].message.content || '{}'
+  ) as SessionContent
 }
 
-export type WotdResult = { word: ClassifyResult; phrase: ClassifyResult };
+export type WotdResult = { entries: WotdEntry[] }
 
-export async function generateWotd(existingEntries: string[]): Promise<WotdResult> {
+//export type WotdResult = { word: ClassifyResult; phrase: ClassifyResult }
+
+export async function generateLOTD (
+  existingEntries: String[]
+): Promise<WotdResult> {
   const response = await groq.chat.completions.create({
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: [
       {
         role: 'system',
         content:
-          'You generate a daily vocabulary entry for a learner of sophisticated English. ' +
-          'Return a JSON object with exactly two keys: "word" and "phrase". ' +
-          'Each must have these fields: ' +
+          'You generate daily vocabulary words and phrases for a learner of sophisticated English. ' +
+          'Return a JSON object with a key "entries" containing an array of exactly 7 items' +
+          'Each item must contain BOTH a "word" object AND a "phrase" object. ' +
+          'Do NOT return items that contain only one or the other. ' +
+          'Do NOT leave either empty. ' +
+          '"word" must always be a fully populated object describing a single word. ' +
+          '"phrase" must always be a fully populated object describing a multi-word expression. ' +
+          'Each "word" and "phrase" must include:' +
           '"logos" (the entry in title case), ' +
           '"tier" ("Word" for single words, "Phrase" for multi-word expressions), ' +
           '"pos" (part of speech — for words: Adjective/Noun/Verb/Adverb; for phrases: Idiomatic Expression/Verb Phrase/Collocation/Noun Phrase), ' +
@@ -127,23 +146,29 @@ export async function generateWotd(existingEntries: string[]): Promise<WotdResul
           '"word" must be a single uncommon but genuinely useful English word. ' +
           '"phrase" must be a multi-word idiom, collocation, or expression. ' +
           'Do NOT use any entry from the exclusion list. ' +
-          'Respond with valid JSON only, no markdown.',
+          'Respond with valid JSON only, no markdown.'
       },
       {
         role: 'user',
         content: existingEntries.length
-          ? `Exclusion list (already in library): ${existingEntries.slice(0, 60).join(', ')}`
-          : "Generate today's word and phrase.",
-      },
+          ? `Exclusion list (already in library): ${existingEntries
+              .slice(0, 60)
+              .join(', ')}`
+          : "Generate today's word and phrase."
+      }
     ],
-    response_format: { type: 'json_object' },
-  });
-  return JSON.parse(response.choices[0].message.content || '{}') as WotdResult;
+    response_format: { type: 'json_object' }
+  })
+  return JSON.parse(response.choices[0].message.content || '{}') as WotdResult
 }
 
 export type EvalResult = { correct: boolean; feedback: string }
 
-export async function evaluateSentence(entry: string, definition: string, sentence: string): Promise<EvalResult> {
+export async function evaluateSentence (
+  entry: string,
+  definition: string,
+  sentence: string
+): Promise<EvalResult> {
   const response = await groq.chat.completions.create({
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: [
@@ -166,13 +191,17 @@ export async function evaluateSentence(entry: string, definition: string, senten
   return JSON.parse(response.choices[0].message.content || '{}') as EvalResult
 }
 
-export type ChallengeResult = { accepted: boolean; verdict: string; learning: string }
+export type ChallengeResult = {
+  accepted: boolean
+  verdict: string
+  learning: string
+}
 
-export async function challengeGrading(
+export async function challengeGrading (
   word: string,
   userSentence: string,
   originalFeedback: string,
-  userChallenge: string,
+  userChallenge: string
 ): Promise<ChallengeResult> {
   const response = await groq.chat.completions.create({
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
@@ -186,14 +215,16 @@ export async function challengeGrading(
           'Only reject if the word is genuinely misused in a way that reveals misunderstanding of its meaning. ' +
           'Do not penalise for style or elegance. ' +
           'Respond in JSON with exactly these fields: accepted (boolean), verdict (single sentence explaining final decision — if accepted acknowledge what the user got right, if rejected explain precisely why), learning (if accepted: what this challenge taught about valid usage, if rejected: what correct usage looks like). ' +
-          'No markdown no preamble.',
+          'No markdown no preamble.'
       },
       {
         role: 'user',
-        content: `Word: "${word}"\nLearner's sentence: "${userSentence}"\nOriginal feedback: "${originalFeedback}"\nLearner's challenge: "${userChallenge}"`,
-      },
+        content: `Word: "${word}"\nLearner's sentence: "${userSentence}"\nOriginal feedback: "${originalFeedback}"\nLearner's challenge: "${userChallenge}"`
+      }
     ],
-    response_format: { type: 'json_object' },
+    response_format: { type: 'json_object' }
   })
-  return JSON.parse(response.choices[0].message.content || '{}') as ChallengeResult
+  return JSON.parse(
+    response.choices[0].message.content || '{}'
+  ) as ChallengeResult
 }
