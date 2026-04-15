@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { updateLogos, deleteLogos, enrichLogos } from '../db/logoi';
 import { classify, ClassifyResult } from '../services/ai.service';
+import LogoiAudio from '../components/LogoiAudio';
 
 function toSentenceCase(str: string): string {
   if (!str) return str;
@@ -381,7 +382,7 @@ export const Callistratum = () => {
           <div className="det-card">
             <button className="dc-x" onClick={() => setSelectedLogos(null)}>✕</button>
             <div className="dc-top">Logos Detail</div>
-            <div className="dc-word">{toSentenceCase(selectedLogos.text)}</div>
+            <div className="dc-word" style={{display: 'flex', alignItems: 'center', gap: 10}}>{toSentenceCase(selectedLogos.text)} <LogoiAudio logos={selectedLogos.text}/></div>
 
             {(selectedLogos.phonetic || selectedLogos.pos) && (
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>

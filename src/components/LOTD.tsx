@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { usePebbleStore } from "../store";
 import { addLogos as dbAddLogos } from "../db/logoi";
 import type { SlideData } from "../store";
+import LogoiAudio from "./LogoiAudio";
 
 const FALLBACK_SLIDES: SlideData[] = [
   {
@@ -131,7 +132,6 @@ export const LOTD = () => {
                     {/* Definition */}
                     <div className="skel-line" style={{ width: "95%", height: 31, marginBottom: 5 }} />
 
-            
                     {/* Synonyms row */}
                     <div className="ai-skel-row" style={{ gap: 8, marginBottom: 0 }}>
                       <div className="skel-chip" style={{ width: 70, height: 30 }} />
@@ -140,7 +140,10 @@ export const LOTD = () => {
                     </div>
 
                     {/* Train button */}
-                    <div className="skel-line" style={{ width: "100%", height: 40, marginTop: "auto", borderRadius: 6 }} />
+                    <div
+                      className="skel-line"
+                      style={{ width: "100%", height: 40, marginTop: "auto", borderRadius: 6 }}
+                    />
                   </div>
                 ) : (
                   <>
@@ -168,7 +171,10 @@ export const LOTD = () => {
                         </svg>
                       </button>
                     </div>
-                    <div className="lotd-word">{s.word}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <div className="lotd-word">{s.word}</div>
+                      <LogoiAudio logos={s.word} />
+                    </div>
                     <div style={{ display: "flex", gap: 10 }}>
                       {s.ipa && <span className="lotd-sub">{s.ipa}</span>}
                       <span className="lotd-pos">{s.pos}</span>
