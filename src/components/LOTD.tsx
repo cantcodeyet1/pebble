@@ -171,7 +171,7 @@ export const LOTD = () => {
                         </svg>
                       </button>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: 10}}>
                       <div className="lotd-word">{s.word}</div>
                       <LogoiAudio logos={s.word} />
                     </div>

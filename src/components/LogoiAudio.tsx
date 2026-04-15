@@ -14,6 +14,9 @@ export default function LogoiAudio({ logos }: { logos: string }) {
       outputFormat: "mp3_44100_128",
     });
 
+    //TODO - Show animation when loading and playing
+    //TODO - Only allow one audio to play at a time
+
     // 1. Convert stream to a Blob
     const chunks: Uint8Array[] = [];
     for await (const chunk of audioStream) {
