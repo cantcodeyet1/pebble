@@ -47,6 +47,8 @@ function classifyToSlide(r: ClassifyResult): SlideData {
 }
 
 async function displayLogoi(): Promise<void> {
+  usePebbleStore.getState().slidesStatus = "loading";
+  
   try {
     let logoi: any[] = [];
     let logos = await getTodayLOTD();
@@ -77,12 +79,15 @@ async function displayLogoi(): Promise<void> {
 
       if (logoi[0]?.word && logoi[0]?.phrase) {
         usePebbleStore.getState().setTodaySlides([classifyToSlide(logoi[0].word), classifyToSlide(logoi[0].phrase)]);
+        usePebbleStore.getState().slidesStatus = "success"
       }
     } else {
       usePebbleStore.getState().setTodaySlides([classifyToSlide(logos.word), classifyToSlide(logos.phrase)]);
+      usePebbleStore.getState().slidesStatus = "success"
     }
   } catch (err) {
     console.warn("[Pebble] WOTD generation failed:", err);
+    usePebbleStore.getState().slidesStatus = "error"
   }
 }
 
