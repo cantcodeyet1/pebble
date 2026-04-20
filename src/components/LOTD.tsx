@@ -65,7 +65,7 @@ export const LOTD = () => {
   const trainSlide = async (i: number) => {
     const logos = await saveSlide(i);
     if (logos) {
-      navigate("/palaestra", { state: { mode: "agora", step: 3, manualIds: [logos.id] } });
+      navigate("/palaestra", { state: { mode: "enky", step: 3, manualIds: [logos.id] } });
     } else {
       navigate("/palaestra");
     }

@@ -495,7 +495,7 @@ export const Callistratum = () => {
               onClick={() => {
                 const id = selectedLogos.id;
                 setSelectedLogos(null);
-                navigate('/palaestra', { state: { mode: 'agora', step: 3, manualIds: [id] } });
+                navigate('/palaestra', { state: { mode: 'enky', step: 3, manualIds: [id] } });
               }}
             >
               Train this Logos →
